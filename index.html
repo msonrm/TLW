@@ -518,7 +518,7 @@
         // PWA Service Worker 登録
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
+                navigator.serviceWorker.register('./sw.js')
                     .then((registration) => {
                         console.log('SW registered: ', registration);
                     })
@@ -528,10 +528,50 @@
             });
         }
 
-        // Web Share API対応（モバイルブラウザでの共有受け取り）
-        if ('navigator' in window && 'share' in navigator) {
-            // 共有されたデータを受け取る処理は通常別途実装が必要
+        // PWA インストール促進
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallprompt fired');
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // インストールボタンを表示する場合
+            showInstallButton();
+        });
+
+        function showInstallButton() {
+            // 簡易的なインストールボタンを表示
+            if (deferredPrompt) {
+                const installButton = document.createElement('button');
+                installButton.className = 'btn';
+                installButton.textContent = 'アプリをインストール';
+                installButton.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
+                installButton.onclick = () => {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        console.log(choiceResult.outcome);
+                        deferredPrompt = null;
+                        installButton.remove();
+                    });
+                };
+                document.body.appendChild(installButton);
+            }
         }
+
+        // URL共有パラメータの処理
+        window.addEventListener('load', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedUrl = urlParams.get('url');
+            const sharedTitle = urlParams.get('title');
+            
+            if (sharedUrl) {
+                document.getElementById('url').value = sharedUrl;
+                if (sharedTitle) {
+                    document.getElementById('title').value = sharedTitle;
+                }
+            }
+        });
     </script>
 </body>
 </html>
