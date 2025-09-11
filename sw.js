@@ -24,6 +24,32 @@ self.addEventListener('install', (event) => {
 
 // フェッチ時にキャッシュから返す
 self.addEventListener('fetch', (event) => {
+  // Share Target処理
+  const url = new URL(event.request.url);
+  
+  // 共有データを受信した場合の処理
+  if (event.request.method === 'GET' && url.searchParams.has('url')) {
+    console.log('Share target data received:', {
+      url: url.searchParams.get('url'),
+      title: url.searchParams.get('title'),
+      text: url.searchParams.get('text')
+    });
+    
+    // 通常のフェッチ処理に流す（パラメータ付きでindex.htmlを返す）
+    event.respondWith(
+      caches.match('./index.html')
+        .then((response) => {
+          if (response) {
+            console.log('Serving index.html for share target');
+            return response;
+          }
+          return fetch('./index.html');
+        })
+    );
+    return;
+  }
+  
+  // 通常のフェッチ処理
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
