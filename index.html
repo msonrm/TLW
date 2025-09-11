@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLW - ブックマーク</title>
+    
+    <!-- PWA設定 -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#007AFF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TLW">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #007AFF;
+            --secondary-color: #5856D6;
+            --background-color: #F2F2F7;
+            --surface-color: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+            --border-color: #C6C6C8;
+            --destructive-color: #FF3B30;
+            --success-color: #34C759;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #000000;
+                --surface-color: #1C1C1E;
+                --text-primary: #FFFFFF;
+                --text-secondary: #8E8E93;
+                --border-color: #38383A;
+            }
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .header {
+            background-color: var(--surface-color);
+            border-bottom: 0.5px solid var(--border-color);
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .add-form {
+            background-color: var(--surface-color);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 0.5px solid var(--border-color);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: var(--text-secondary);
+        }
+
+        .btn-destructive {
+            background-color: var(--destructive-color);
+        }
+
+        .bookmarks-list {
+            background-color: var(--surface-color);
+            border-radius: 10px;
+            border: 0.5px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .bookmark-item {
+            padding: 16px 20px;
+            border-bottom: 0.5px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            transition: background-color 0.2s;
+        }
+
+        .bookmark-item:last-child {
+            border-bottom: none;
+        }
+
+        .bookmark-item:active {
+            background-color: var(--background-color);
+        }
+
+        .bookmark-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .bookmark-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .bookmark-url {
+            color: var(--text-secondary);
+            font-size: 14px;
+            word-break: break-all;
+            margin-bottom: 8px;
+        }
+
+        .bookmark-code {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            letter-spacing: 2px;
+        }
+
+        .bookmark-actions {
+            display: flex;
+            gap: 8px;
+            margin-left: 16px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+            min-width: auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 16px;
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background-color: var(--surface-color);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            border: 0.5px solid var(--border-color);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            
+            .header {
+                padding: 12px 16px;
+            }
+            
+            .bookmark-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>TLW</h1>
+        <p>パーソナルブックマーク管理</p>
+    </div>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="totalCount">0</div>
+                <div class="stat-label">ブックマーク</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="todayCount">0</div>
+                <div class="stat-label">今日追加</div>
+            </div>
+        </div>
+
+        <div class="add-form">
+            <div class="form-group">
+                <label for="url">URL</label>
+                <input type="url" id="url" placeholder="https://example.com" required>
+            </div>
+            <div class="form-group">
+                <label for="title">タイトル（任意）</label>
+                <input type="text" id="title" placeholder="サイトのタイトル">
+            </div>
+            <button class="btn" onclick="addBookmark()">ブックマーク追加</button>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="search" placeholder="ブックマークを検索..." oninput="filterBookmarks()">
+        </div>
+
+        <div class="bookmarks-list" id="bookmarksList">
+            <div class="empty-state">
+                <h3>ブックマークがありません</h3>
+                <p>上のフォームからブックマークを追加してください</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 母音を除いた21文字のアルファベット
+        const CONSONANTS = 'BCDFGHJKLMNPQRSTVWXYZ'.split('');
+        
+        let bookmarks = JSON.parse(localStorage.getItem('tlw-bookmarks') || '[]');
+
+        // 3文字のランダムコードを生成
+        function generateCode() {
+            let code;
+            let attempts = 0;
+            const maxAttempts = 1000;
+
+            do {
+                code = '';
+                for (let i = 0; i < 3; i++) {
+                    code += CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
+                }
+                attempts++;
+            } while (bookmarks.some(b => b.code === code) && attempts < maxAttempts);
+
+            return code;
+        }
+
+        // URLからタイトルを取得（簡易版）
+        async function fetchTitle(url) {
+            try {
+                // CORS制限により、実際のタイトル取得は難しいため
+                // URLから推定タイトルを生成
+                const domain = new URL(url).hostname.replace('www.', '');
+                return domain;
+            } catch (error) {
+                return 'Unknown Site';
+            }
+        }
+
+        // ブックマーク追加
+        async function addBookmark() {
+            const urlInput = document.getElementById('url');
+            const titleInput = document.getElementById('title');
+            
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert('URLを入力してください');
+                return;
+            }
+
+            // URLの形式チェック
+            try {
+                new URL(url);
+            } catch (error) {
+                alert('有効なURLを入力してください');
+                return;
+            }
+
+            const title = titleInput.value.trim() || await fetchTitle(url);
+            const code = generateCode();
+            
+            const bookmark = {
+                id: Date.now(),
+                url: url,
+                title: title,
+                code: code,
+                createdAt: new Date().toISOString(),
+                createdDate: new Date().toDateString()
+            };
+
+            bookmarks.unshift(bookmark);
+            localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
+            
+            urlInput.value = '';
+            titleInput.value = '';
+            
+            renderBookmarks();
+            updateStats();
+        }
+
+        // ブックマーク削除
+        function deleteBookmark(id) {
+            if (confirm('このブックマークを削除しますか？')) {
+                bookmarks = bookmarks.filter(b => b.id !== id);
+                localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
+                renderBookmarks();
+                updateStats();
+            }
+        }
+
+        // コードをクリップボードにコピー
+        function copyCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                // フィードバック表示（簡易版）
+                const event = new CustomEvent('show-toast', { detail: { message: `コード "${code}" をコピーしました` } });
+                document.dispatchEvent(event);
+            });
+        }
+
+        // ブックマーク一覧レンダリング
+        function renderBookmarks(filteredBookmarks = null) {
+            const container = document.getElementById('bookmarksList');
+            const bookmarksToShow = filteredBookmarks || bookmarks;
+
+            if (bookmarksToShow.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>${filteredBookmarks ? '検索結果がありません' : 'ブックマークがありません'}</h3>
+                        <p>${filteredBookmarks ? '別のキーワードで検索してみてください' : '上のフォームからブックマークを追加してください'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = bookmarksToShow.map(bookmark => `
+                <div class="bookmark-item">
+                    <div class="bookmark-content">
+                        <a href="${bookmark.url}" target="_blank" class="bookmark-title">${bookmark.title}</a>
+                        <div class="bookmark-url">${bookmark.url}</div>
+                        <span class="bookmark-code">${bookmark.code}</span>
+                    </div>
+                    <div class="bookmark-actions">
+                        <button class="btn btn-secondary btn-small" onclick="copyCode('${bookmark.code}')">
+                            コピー
+                        </button>
+                        <button class="btn btn-destructive btn-small" onclick="deleteBookmark(${bookmark.id})">
+                            削除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ブックマーク検索
+        function filterBookmarks() {
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            if (!searchTerm) {
+                renderBookmarks();
+                return;
+            }
+
+            const filtered = bookmarks.filter(bookmark => 
+                bookmark.title.toLowerCase().includes(searchTerm) ||
+                bookmark.url.toLowerCase().includes(searchTerm) ||
+                bookmark.code.toLowerCase().includes(searchTerm)
+            );
+
+            renderBookmarks(filtered);
+        }
+
+        // 統計情報更新
+        function updateStats() {
+            const today = new Date().toDateString();
+            const todayBookmarks = bookmarks.filter(b => b.createdDate === today);
+            
+            document.getElementById('totalCount').textContent = bookmarks.length;
+            document.getElementById('todayCount').textContent = todayBookmarks.length;
+        }
+
+        // 簡易トースト表示
+        document.addEventListener('show-toast', (event) => {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: var(--success-color);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                z-index: 1000;
+                font-weight: 600;
+                animation: slideIn 0.3s ease;
+            `;
+            toast.textContent = event.detail.message;
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+                style.remove();
+            }, 2000);
+        });
+
+        // Enter キーでブックマーク追加
+        document.getElementById('url').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addBookmark();
+        });
+        document.getElementById('title').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addBookmark();
+        });
+
+        // 初期化
+        renderBookmarks();
+        updateStats();
+
+        // PWA Service Worker 登録
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+
+        // Web Share API対応（モバイルブラウザでの共有受け取り）
+        if ('navigator' in window && 'share' in navigator) {
+            // 共有されたデータを受け取る処理は通常別途実装が必要
+        }
+    </script>
+</body>
+</html>
