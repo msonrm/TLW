@@ -487,17 +487,81 @@
         renderBookmarks();
         updateStats();
 
-        // PWA Service Worker 登録
+        // PWA Service Worker 登録と自動更新
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
                     .then((registration) => {
                         console.log('SW registered: ', registration);
+                        
+                        // 更新チェック
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('New SW installing...');
+                            
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        // 新しいバージョンが利用可能
+                                        showUpdateAvailable();
+                                    }
+                                }
+                            });
+                        });
+                        
+                        // 定期的な更新チェック（5分毎）
+                        setInterval(() => {
+                            registration.update();
+                        }, 300000);
                     })
                     .catch((registrationError) => {
                         console.log('SW registration failed: ', registrationError);
                     });
             });
+        }
+
+        // 更新通知表示
+        function showUpdateAvailable() {
+            const updateBanner = document.createElement('div');
+            updateBanner.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: var(--primary-color);
+                color: white;
+                padding: 12px 20px;
+                text-align: center;
+                z-index: 1001;
+                font-weight: 600;
+                cursor: pointer;
+                animation: slideDown 0.3s ease;
+            `;
+            updateBanner.innerHTML = `
+                📱 新しいバージョンが利用可能です。タップして更新
+            `;
+            
+            updateBanner.onclick = () => {
+                window.location.reload();
+            };
+            
+            // アニメーション追加
+            if (!document.getElementById('update-style')) {
+                const style = document.createElement('style');
+                style.id = 'update-style';
+                style.textContent = `
+                    @keyframes slideDown {
+                        from { transform: translateY(-100%); }
+                        to { transform: translateY(0); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(updateBanner);
+            
+            // ページコンテンツを下にずらす
+            document.body.style.paddingTop = '60px';
         }
 
         // PWA インストール促進
