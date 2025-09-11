@@ -470,37 +470,9 @@
             document.getElementById('todayCount').textContent = todayBookmarks.length;
         }
 
-        // 簡易トースト表示
+        // 簡易トースト表示（既存の処理を統合）
         document.addEventListener('show-toast', (event) => {
-            const toast = document.createElement('div');
-            toast.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: var(--success-color);
-                color: white;
-                padding: 12px 20px;
-                border-radius: 8px;
-                z-index: 1000;
-                font-weight: 600;
-                animation: slideIn 0.3s ease;
-            `;
-            toast.textContent = event.detail.message;
-            
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideIn {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-            `;
-            document.head.appendChild(style);
-            
-            document.body.appendChild(toast);
-            setTimeout(() => {
-                toast.remove();
-                style.remove();
-            }, 2000);
+            showToast(event.detail.message);
         });
 
         // Enter キーでブックマーク追加
