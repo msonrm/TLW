@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tlw-bookmark-v1';
+const CACHE_NAME = 'tlw-bookmark-v2';
 const urlsToCache = [
   './',
   './index.html',
@@ -67,17 +67,23 @@ self.addEventListener('fetch', (event) => {
 
 // 古いキャッシュを削除
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating...');
+  console.log('Service Worker activating... v2');
+  // 即座に制御を開始
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // 古いキャッシュを削除
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // 即座にクライアントを制御
+      self.clients.claim()
+    ])
   );
 });
