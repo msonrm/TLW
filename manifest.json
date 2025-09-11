@@ -1,0 +1,34 @@
+{
+  "name": "TLW - パーソナルブックマーク管理",
+  "short_name": "TLW",
+  "description": "アルファベット3文字コード付きパーソナルブックマーク管理アプリ",
+  "start_url": "/TLW/",
+  "display": "standalone",
+  "background_color": "#F2F2F7",
+  "theme_color": "#007AFF",
+  "orientation": "portrait",
+  "categories": ["productivity", "utilities"],
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "share_target": {
+    "action": "/TLW/",
+    "method": "GET",
+    "params": {
+      "url": "url",
+      "title": "title"
+    }
+  }
+}
