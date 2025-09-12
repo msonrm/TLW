@@ -82,9 +82,53 @@
         .add-form {
             background-color: var(--surface-color);
             border-radius: 10px;
-            padding: 20px;
             margin-bottom: 20px;
             border: 0.5px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .form-header {
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+
+        .form-header:hover {
+            background-color: rgba(0, 122, 255, 0.05);
+        }
+
+        .form-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .toggle-icon {
+            font-size: 24px;
+            font-weight: 300;
+            color: var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.expanded {
+            transform: rotate(45deg);
+        }
+
+        .form-content {
+            padding: 0 20px 20px;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+        }
+
+        .form-content.expanded {
+            max-height: 300px;
+            padding: 20px;
         }
 
         .form-group {
@@ -237,31 +281,6 @@
             color: var(--text-primary);
         }
 
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            background-color: var(--surface-color);
-            border-radius: 10px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            border: 0.5px solid var(--border-color);
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
         @media (max-width: 768px) {
             .container {
                 padding: 16px;
@@ -284,27 +303,22 @@
     </div>
 
     <div class="container">
-        <div class="stats">
-            <div class="stat-item">
-                <div class="stat-value" id="totalCount">0</div>
-                <div class="stat-label">ブックマーク</div>
+        <div class="add-form" id="addForm">
+            <div class="form-header" onclick="toggleAddForm()">
+                <h3>新しいブックマーク</h3>
+                <div class="toggle-icon" id="toggleIcon">+</div>
             </div>
-            <div class="stat-item">
-                <div class="stat-value" id="todayCount">0</div>
-                <div class="stat-label">今日追加</div>
+            <div class="form-content" id="formContent">
+                <div class="form-group">
+                    <label for="url">URL</label>
+                    <input type="url" id="url" placeholder="https://example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="title">タイトル（任意）</label>
+                    <input type="text" id="title" placeholder="サイトのタイトル">
+                </div>
+                <button class="btn" onclick="addBookmark()">ブックマーク追加</button>
             </div>
-        </div>
-
-        <div class="add-form">
-            <div class="form-group">
-                <label for="url">URL</label>
-                <input type="url" id="url" placeholder="https://example.com" required>
-            </div>
-            <div class="form-group">
-                <label for="title">タイトル（任意）</label>
-                <input type="text" id="title" placeholder="サイトのタイトル">
-            </div>
-            <button class="btn" onclick="addBookmark()">ブックマーク追加</button>
         </div>
 
         <div class="search-box">
@@ -392,7 +406,6 @@
             titleInput.value = '';
             
             renderBookmarks();
-            updateStats();
         }
 
         // ブックマーク削除
@@ -401,8 +414,12 @@
                 bookmarks = bookmarks.filter(b => b.id !== id);
                 localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
                 renderBookmarks();
-                updateStats();
             }
+        }
+
+        // ブックマークを新しいタブで開く
+        function openBookmark(url) {
+            window.open(url, '_blank');
         }
 
         // コードをクリップボードにコピー
@@ -412,6 +429,37 @@
                 const event = new CustomEvent('show-toast', { detail: { message: `コード "${code}" をコピーしました` } });
                 document.dispatchEvent(event);
             });
+        }
+
+        // フォームの表示切り替え
+        function toggleAddForm() {
+            const formContent = document.getElementById('formContent');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            formContent.classList.toggle('expanded');
+            toggleIcon.classList.toggle('expanded');
+            
+            if (formContent.classList.contains('expanded')) {
+                // フォームを開いた時にURLフィールドにフォーカス
+                setTimeout(() => {
+                    document.getElementById('url').focus();
+                }, 300);
+            }
+        }
+
+        // フォームを展開する
+        function expandAddForm() {
+            const formContent = document.getElementById('formContent');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (!formContent.classList.contains('expanded')) {
+                formContent.classList.add('expanded');
+                toggleIcon.classList.add('expanded');
+                
+                setTimeout(() => {
+                    document.getElementById('url').focus();
+                }, 300);
+            }
         }
 
         // ブックマーク一覧レンダリング
@@ -437,6 +485,9 @@
                         <span class="bookmark-code">${bookmark.code}</span>
                     </div>
                     <div class="bookmark-actions">
+                        <button class="btn btn-secondary btn-small" onclick="openBookmark('${bookmark.url}')">
+                            開く
+                        </button>
                         <button class="btn btn-secondary btn-small" onclick="copyCode('${bookmark.code}')">
                             コピー
                         </button>
@@ -463,15 +514,6 @@
             );
 
             renderBookmarks(filtered);
-        }
-
-        // 統計情報更新
-        function updateStats() {
-            const today = new Date().toDateString();
-            const todayBookmarks = bookmarks.filter(b => b.createdDate === today);
-            
-            document.getElementById('totalCount').textContent = bookmarks.length;
-            document.getElementById('todayCount').textContent = todayBookmarks.length;
         }
 
         // トースト表示
@@ -596,6 +638,7 @@
                         // フォーカス設定
                         setTimeout(() => {
                             if (urlInput.value) {
+                                expandAddForm(); // フォームを展開
                                 urlInput.focus();
                                 urlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }
@@ -788,7 +831,6 @@
 
         // 初期化
         renderBookmarks();
-        updateStats();
     </script>
 </body>
 </html>
