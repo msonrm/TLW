@@ -127,7 +127,7 @@
         }
 
         .form-content.expanded {
-            max-height: 300px;
+            max-height: 500px;
             padding: 20px;
         }
 
@@ -153,9 +153,31 @@
             transition: border-color 0.2s;
         }
 
-        .form-group input:focus {
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: var(--primary-color);
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
         }
 
         .btn {
@@ -229,6 +251,15 @@
             font-size: 14px;
             word-break: break-all;
             margin-bottom: 8px;
+        }
+
+        .bookmark-comment {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            font-style: italic;
+            line-height: 1.4;
         }
 
         .bookmark-code {
@@ -317,6 +348,13 @@
                     <label for="title">タイトル（任意）</label>
                     <input type="text" id="title" placeholder="サイトのタイトル">
                 </div>
+                <div class="form-group">
+                    <label for="comment">コメント（任意）</label>
+                    <textarea id="comment" placeholder="このサイトについてのメモ..." maxlength="200" rows="3"></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span>/200文字
+                    </div>
+                </div>
                 <button class="btn" onclick="addBookmark()">ブックマーク追加</button>
             </div>
         </div>
@@ -368,10 +406,18 @@
             }
         }
 
+        // 文字数カウント更新
+        function updateCharCount() {
+            const commentInput = document.getElementById('comment');
+            const charCount = document.getElementById('charCount');
+            charCount.textContent = commentInput.value.length;
+        }
+
         // ブックマーク追加
         async function addBookmark() {
             const urlInput = document.getElementById('url');
             const titleInput = document.getElementById('title');
+            const commentInput = document.getElementById('comment');
             
             const url = urlInput.value.trim();
             if (!url) {
@@ -388,12 +434,14 @@
             }
 
             const title = titleInput.value.trim() || await fetchTitle(url);
+            const comment = commentInput.value.trim();
             const code = generateCode();
             
             const bookmark = {
                 id: Date.now(),
                 url: url,
                 title: title,
+                comment: comment,
                 code: code,
                 createdAt: new Date().toISOString(),
                 createdDate: new Date().toDateString()
@@ -404,6 +452,8 @@
             
             urlInput.value = '';
             titleInput.value = '';
+            commentInput.value = '';
+            updateCharCount();
             
             // フォームを折りたたむ
             const formContent = document.getElementById('formContent');
@@ -479,6 +529,7 @@
                     <div class="bookmark-content">
                         <a href="${bookmark.url}" target="_blank" class="bookmark-title">${bookmark.title}</a>
                         <div class="bookmark-url">${bookmark.url}</div>
+                        ${bookmark.comment ? `<div class="bookmark-comment">"${bookmark.comment}"</div>` : ''}
                         <span class="bookmark-code">${bookmark.code}</span>
                     </div>
                     <div class="bookmark-actions">
@@ -504,7 +555,8 @@
             const filtered = bookmarks.filter(bookmark => 
                 bookmark.title.toLowerCase().includes(searchTerm) ||
                 bookmark.url.toLowerCase().includes(searchTerm) ||
-                bookmark.code.toLowerCase().includes(searchTerm)
+                bookmark.code.toLowerCase().includes(searchTerm) ||
+                (bookmark.comment && bookmark.comment.toLowerCase().includes(searchTerm))
             );
 
             renderBookmarks(filtered);
@@ -778,12 +830,16 @@
             }
         }
 
-        // Enter キーでブックマーク追加
+        // Enter キーでブックマーク追加とコメント文字数カウント
         document.getElementById('url').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addBookmark();
         });
         document.getElementById('title').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addBookmark();
+        });
+        document.getElementById('comment').addEventListener('input', updateCharCount);
+        document.getElementById('comment').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) addBookmark();
         });
 
         // 初期化時に共有データ処理
