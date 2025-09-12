@@ -6,12 +6,16 @@
     <title>TLW - ブックマーク</title>
     
     <!-- PWA設定 -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#007AFF">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="TLW">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="./icon-512.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
     
     <style>
         * {
@@ -470,22 +474,210 @@
             document.getElementById('todayCount').textContent = todayBookmarks.length;
         }
 
-        // 簡易トースト表示（既存の処理を統合）
-        document.addEventListener('show-toast', (event) => {
-            showToast(event.detail.message);
-        });
+        // トースト表示
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--success-color);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                z-index: 1000;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                animation: toastSlide 0.3s ease;
+            `;
+            toast.textContent = message;
+            
+            // アニメーション追加
+            if (!document.getElementById('toast-style')) {
+                const style = document.createElement('style');
+                style.id = 'toast-style';
+                style.textContent = `
+                    @keyframes toastSlide {
+                        from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+                        to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'toastSlide 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
 
-        // Enter キーでブックマーク追加
-        document.getElementById('url').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addBookmark();
-        });
-        document.getElementById('title').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') addBookmark();
-        });
+        // デバッグ情報を一時的に画面表示
+        function showDebugInfo(data) {
+            const debugDiv = document.createElement('div');
+            debugDiv.style.cssText = `
+                position: fixed;
+                top: 80px;
+                left: 10px;
+                right: 10px;
+                background: #000;
+                color: #fff;
+                padding: 15px;
+                border-radius: 8px;
+                z-index: 1002;
+                font-family: monospace;
+                font-size: 12px;
+                max-height: 300px;
+                overflow-y: auto;
+                white-space: pre-wrap;
+            `;
+            
+            debugDiv.innerHTML = `
+                <strong>🔍 共有データデバッグ情報</strong>
+                <div style="margin-top: 10px;">
+                Full URL: ${data.fullUrl}
+                Search: ${data.searchString || '(empty)'}
+                URL Param: ${data.urlParam || '(null)'}
+                Title Param: ${data.titleParam || '(null)'}
+                Text Param: ${data.textParam || '(null)'}
+                All Params: ${JSON.stringify(data.allParams, null, 2)}
+                </div>
+                <button onclick="this.parentElement.remove()" style="margin-top: 10px; background: #007AFF; color: white; border: none; padding: 5px 10px; border-radius: 4px;">閉じる</button>
+            `;
+            
+            document.body.appendChild(debugDiv);
+            
+            // 10秒後に自動削除
+            setTimeout(() => {
+                if (debugDiv.parentNode) {
+                    debugDiv.remove();
+                }
+            }, 10000);
+        }
 
-        // 初期化
-        renderBookmarks();
-        updateStats();
+        // URL共有パラメータの処理（デバッグ強化版）
+        function handleSharedData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedUrl = urlParams.get('url');
+            const sharedTitle = urlParams.get('title');
+            const sharedText = urlParams.get('text');
+            
+            // デバッグ情報を画面に表示
+            console.log('=== SHARED DATA DEBUG ===');
+            console.log('Full URL:', window.location.href);
+            console.log('Search string:', window.location.search);
+            console.log('URL param:', sharedUrl);
+            console.log('Title param:', sharedTitle);
+            console.log('Text param:', sharedText);
+            console.log('All params:', Object.fromEntries(urlParams.entries()));
+            
+            // デバッグ情報を画面に一時表示
+            showDebugInfo({
+                fullUrl: window.location.href,
+                searchString: window.location.search,
+                urlParam: sharedUrl,
+                titleParam: sharedTitle,
+                textParam: sharedText,
+                allParams: Object.fromEntries(urlParams.entries())
+            });
+            
+            if (sharedUrl) {
+                const urlInput = document.getElementById('url');
+                const titleInput = document.getElementById('title');
+                
+                urlInput.value = sharedUrl;
+                urlInput.focus();
+                
+                if (sharedTitle) {
+                    titleInput.value = sharedTitle;
+                } else if (sharedText) {
+                    titleInput.value = sharedText;
+                }
+                
+                // パラメータをクリアして履歴をきれいに保つ
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+                
+                // 視覚的フィードバック
+                const addForm = document.querySelector('.add-form');
+                addForm.style.animation = 'highlight 1s ease-out';
+                
+                // ハイライトアニメーション用CSS
+                if (!document.getElementById('highlight-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'highlight-style';
+                    style.textContent = `
+                        @keyframes highlight {
+                            0% { background-color: var(--primary-color); opacity: 0.1; }
+                            50% { background-color: var(--primary-color); opacity: 0.2; }
+                            100% { background-color: var(--surface-color); opacity: 1; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                // トースト表示
+                showToast('共有されたサイトを受信しました！');
+            } else {
+                // パラメータがない場合もデバッグ表示
+                console.log('No shared URL found');
+                if (window.location.search) {
+                    showToast('URLパラメータは検出されましたが、url値が見つかりません');
+                }
+            }
+        }
+
+        // 手動での共有受信機能を追加
+        function addManualShareButton() {
+            if ('navigator' in window && 'clipboard' in navigator) {
+                const manualShareDiv = document.createElement('div');
+                manualShareDiv.style.cssText = `
+                    background-color: var(--surface-color);
+                    border-radius: 10px;
+                    padding: 16px;
+                    margin-bottom: 20px;
+                    border: 0.5px solid var(--border-color);
+                    text-align: center;
+                `;
+                manualShareDiv.innerHTML = `
+                    <p style="margin-bottom: 12px; color: var(--text-secondary);">
+                        共有機能が動作しない場合の代替方法：
+                    </p>
+                    <button class="btn btn-secondary" onclick="pasteFromClipboard()">
+                        クリップボードからURL貼り付け
+                    </button>
+                `;
+                
+                const container = document.querySelector('.container');
+                const addForm = document.querySelector('.add-form');
+                container.insertBefore(manualShareDiv, addForm);
+            }
+        }
+
+        // クリップボードからの貼り付け機能
+        async function pasteFromClipboard() {
+            try {
+                const text = await navigator.clipboard.readText();
+                console.log('Clipboard content:', text);
+                
+                // URLっぽい文字列を検出
+                const urlPattern = /https?:\/\/[^\s]+/g;
+                const urls = text.match(urlPattern);
+                
+                if (urls && urls.length > 0) {
+                    document.getElementById('url').value = urls[0];
+                    showToast('クリップボードからURLを取得しました');
+                } else {
+                    // URLが見つからない場合、テキスト全体をタイトルに
+                    document.getElementById('title').value = text;
+                    showToast('クリップボードの内容をタイトルに設定しました');
+                }
+            } catch (error) {
+                console.error('Clipboard access failed:', error);
+                showToast('クリップボードへのアクセスに失敗しました');
+            }
+        }
 
         // PWA Service Worker 登録と自動更新
         if ('serviceWorker' in navigator) {
@@ -564,7 +756,7 @@
             document.body.style.paddingTop = '60px';
         }
 
-        // PWA インストール促進
+        // PWAインストール促進
         let deferredPrompt;
         
         window.addEventListener('beforeinstallprompt', (e) => {
@@ -595,19 +787,31 @@
             }
         }
 
-        // URL共有パラメータの処理
-        window.addEventListener('load', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const sharedUrl = urlParams.get('url');
-            const sharedTitle = urlParams.get('title');
-            
-            if (sharedUrl) {
-                document.getElementById('url').value = sharedUrl;
-                if (sharedTitle) {
-                    document.getElementById('title').value = sharedTitle;
-                }
-            }
+        // 簡易トースト表示（既存の処理を統合）
+        document.addEventListener('show-toast', (event) => {
+            showToast(event.detail.message);
         });
+
+        // Enter キーでブックマーク追加
+        document.getElementById('url').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addBookmark();
+        });
+        document.getElementById('title').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addBookmark();
+        });
+
+        // 初期化時に手動共有ボタンを追加と共有データ処理
+        window.addEventListener('DOMContentLoaded', () => {
+            addManualShareButton();
+            console.log('DOMContentLoaded - checking for shared data');
+            console.log('Current URL:', window.location.href);
+            console.log('Search params:', window.location.search);
+            handleSharedData();
+        });
+
+        // 初期化
+        renderBookmarks();
+        updateStats();
     </script>
 </body>
 </html>
