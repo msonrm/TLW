@@ -802,11 +802,27 @@
 
         // 初期化時に手動共有ボタンを追加と共有データ処理
         window.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM fully loaded, initializing...');
             addManualShareButton();
             console.log('DOMContentLoaded - checking for shared data');
             console.log('Current URL:', window.location.href);
             console.log('Search params:', window.location.search);
-            handleSharedData();
+            
+            // 少し待ってからsharedData処理を実行（DOM要素が確実に存在するように）
+            setTimeout(() => {
+                console.log('Delayed handleSharedData execution');
+                handleSharedData();
+            }, 100);
+        });
+        
+        // 追加の安全策として、loadイベントでも実行
+        window.addEventListener('load', () => {
+            console.log('Window load complete');
+            // DOMContentLoadedで実行されなかった場合のバックアップ
+            if (window.location.search && !document.getElementById('url').value) {
+                console.log('Backup execution of handleSharedData');
+                handleSharedData();
+            }
         });
 
         // 初期化
