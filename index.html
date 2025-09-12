@@ -405,6 +405,12 @@
             urlInput.value = '';
             titleInput.value = '';
             
+            // フォームを折りたたむ
+            const formContent = document.getElementById('formContent');
+            const toggleIcon = document.getElementById('toggleIcon');
+            formContent.classList.remove('expanded');
+            toggleIcon.classList.remove('expanded');
+            
             renderBookmarks();
         }
 
@@ -420,15 +426,6 @@
         // ブックマークを新しいタブで開く
         function openBookmark(url) {
             window.open(url, '_blank');
-        }
-
-        // コードをクリップボードにコピー
-        function copyCode(code) {
-            navigator.clipboard.writeText(code).then(() => {
-                // フィードバック表示（簡易版）
-                const event = new CustomEvent('show-toast', { detail: { message: `コード "${code}" をコピーしました` } });
-                document.dispatchEvent(event);
-            });
         }
 
         // フォームの表示切り替え
@@ -487,9 +484,6 @@
                     <div class="bookmark-actions">
                         <button class="btn btn-secondary btn-small" onclick="openBookmark('${bookmark.url}')">
                             開く
-                        </button>
-                        <button class="btn btn-secondary btn-small" onclick="copyCode('${bookmark.code}')">
-                            コピー
                         </button>
                         <button class="btn btn-destructive btn-small" onclick="deleteBookmark(${bookmark.id})">
                             削除
@@ -783,11 +777,6 @@
                 document.body.appendChild(installButton);
             }
         }
-
-        // 簡易トースト表示
-        document.addEventListener('show-toast', (event) => {
-            showToast(event.detail.message);
-        });
 
         // Enter キーでブックマーク追加
         document.getElementById('url').addEventListener('keypress', (e) => {
