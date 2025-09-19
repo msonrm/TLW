@@ -299,14 +299,22 @@
 
         .bookmark-actions {
             display: flex;
+            flex-direction: row;
             justify-content: space-between;
             align-items: center;
+            width: 100%;
+            gap: 16px;
+        }
+
+        .bookmark-actions .btn {
+            flex-shrink: 0;
         }
 
         .btn-small {
             padding: 6px 12px;
             font-size: 14px;
             min-width: auto;
+            white-space: nowrap;
         }
 
         .empty-state {
@@ -345,7 +353,7 @@
             }
             
             .bookmark-actions {
-                flex-direction: column;
+                flex-direction: row !important;
             }
         }
     </style>
