@@ -256,7 +256,7 @@
             background-color: var(--primary-color);
             color: white;
             font-family: 'SF Mono', Monaco, monospace;
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
             padding: 4px 8px;
             border-radius: 6px;
@@ -309,6 +309,11 @@
             align-items: center;
             width: 100%;
             gap: 16px;
+        }
+
+        .bookmark-actions-right {
+            display: flex;
+            gap: 8px;
         }
 
         .bookmark-actions .btn {
@@ -695,12 +700,14 @@
                                 <button class="btn btn-destructive btn-small" onclick="event.stopPropagation(); deleteBookmark(${bookmark.id})">
                                     削除
                                 </button>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); editBookmark(${bookmark.id})">
-                                    編集
-                                </button>
-                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openBookmark('${bookmark.url}')">
-                                    開く
-                                </button>
+                                <div class="bookmark-actions-right">
+                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); editBookmark(${bookmark.id})">
+                                        コメント編集
+                                    </button>
+                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openBookmark('${bookmark.url}')">
+                                        開く
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
