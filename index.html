@@ -54,8 +54,7 @@
         }
 
         html {
-            overscroll-behavior: contain;
-            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: none;
         }
 
         body {
@@ -63,12 +62,7 @@
             background-color: var(--background-color);
             color: var(--text-primary);
             line-height: 1.5;
-            overscroll-behavior: contain;
-            overscroll-behavior-y: contain;
-            touch-action: pan-y;
-            -webkit-overflow-scrolling: touch;
-            position: relative;
-            min-height: 100vh;
+            overscroll-behavior-y: none;
         }
 
         .header {
@@ -468,6 +462,7 @@
             overflow-y: auto;
             position: relative;
             animation: dialogSlideIn 0.3s ease;
+            overscroll-behavior-y: contain;
         }
 
         .help-header {
@@ -1348,29 +1343,17 @@
             }
         });
 
-        // Pull to refresh無効化の追加設定
+        // Pull to refresh無効化（シンプル版）
         function disablePullToRefresh() {
-            let startY = 0;
-            
-            document.addEventListener('touchstart', function(e) {
-                startY = e.touches[0].pageY;
-            }, { passive: false });
-
             document.addEventListener('touchmove', function(e) {
-                const currentY = e.touches[0].pageY;
-                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                
-                // 最上部で下向きにスワイプしようとした場合のみ防ぐ
-                if (scrollTop === 0 && currentY > startY) {
+                if (window.scrollY === 0 && e.touches[0].clientY > e.touches[0].pageY) {
                     e.preventDefault();
                 }
             }, { passive: false });
         }
 
-        // 初期化時にpull to refresh無効化を実行
-        disablePullToRefresh();
-
         // 初期化
+        disablePullToRefresh();
         renderBookmarks();
     </script>
 </body>
