@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tlw-bookmark-v28';
+const CACHE_NAME = 'tlw-bookmark-v29';
 const urlsToCache = [
   './',
   './index.html',
