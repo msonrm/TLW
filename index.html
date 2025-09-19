@@ -919,8 +919,94 @@
             }
         }
 
-        function openBookmark(url) {
-            window.open(url, '_blank');
+        // URL共有パラメータの処理
+        function handleSharedData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedUrl = urlParams.get('url');
+            const sharedTitle = urlParams.get('title');
+            const sharedText = urlParams.get('text');
+            
+            let urlInput, titleInput;
+            
+            urlInput = document.getElementById('url');
+            titleInput = document.getElementById('title');
+            
+            if (!urlInput) urlInput = document.querySelector('input[id="url"]');
+            if (!titleInput) titleInput = document.querySelector('input[id="title"]');
+            
+            if (!urlInput) urlInput = document.querySelectorAll('input[type="url"]')[0];
+            if (!titleInput) titleInput = document.querySelectorAll('input[type="text"]')[0];
+            
+            if (sharedUrl || sharedTitle || sharedText) {
+                if (urlInput && titleInput) {
+                    try {
+                        if (document.activeElement) {
+                            document.activeElement.blur();
+                        }
+                        
+                        if (sharedUrl) {
+                            urlInput.value = sharedUrl;
+                            urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            urlInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        
+                        if (sharedTitle) {
+                            titleInput.value = sharedTitle;
+                            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            titleInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else if (sharedText) {
+                            titleInput.value = sharedText;
+                            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            titleInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        
+                        if (!sharedUrl && sharedText) {
+                            const urlPattern = /https?:\/\/[^\s]+/g;
+                            const foundUrls = sharedText.match(urlPattern);
+                            if (foundUrls && foundUrls.length > 0) {
+                                urlInput.value = foundUrls[0];
+                                urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                urlInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                
+                                const remainingText = sharedText.replace(foundUrls[0], '').trim();
+                                if (remainingText) {
+                                    titleInput.value = remainingText;
+                                    titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                    titleInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            }
+                        }
+                        
+                        setTimeout(() => {
+                            if (sharedUrl && !urlInput.value) {
+                                urlInput.setAttribute('value', sharedUrl);
+                                urlInput.value = sharedUrl;
+                            }
+                            if ((sharedTitle || sharedText) && !titleInput.value) {
+                                const titleValue = sharedTitle || sharedText;
+                                titleInput.setAttribute('value', titleValue);
+                                titleInput.value = titleValue;
+                            }
+                        }, 500);
+                        
+                        setTimeout(() => {
+                            if (urlInput.value) {
+                                toggleAddForm();
+                                urlInput.focus();
+                                urlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }, 200);
+                        
+                    } catch (error) {
+                        console.error('Error setting form values:', error);
+                    }
+                    
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, newUrl);
+                    
+                    showToast('共有されたサイトを受信しました');
+                }
+            }
         }
 
         function toggleBookmarkFocus(id) {
@@ -1352,8 +1438,39 @@
             }, { passive: false });
         }
 
-        // 初期化
+        // 初期化時にpull to refresh無効化を実行
         disablePullToRefresh();
+
+        // 初期化時に共有データ処理
+        window.addEventListener('DOMContentLoaded', () => {
+            handleSharedData();
+            
+            setTimeout(() => {
+                handleSharedData();
+            }, 100);
+            
+            setTimeout(() => {
+                handleSharedData();
+            }, 500);
+        });
+        
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                handleSharedData();
+            }, 200);
+        });
+        
+        document.addEventListener('readystatechange', () => {
+            if (document.readyState === 'complete') {
+                setTimeout(() => {
+                    if (window.location.search) {
+                        handleSharedData();
+                    }
+                }, 100);
+            }
+        });
+
+        // 初期化
         renderBookmarks();
     </script>
 </body>
