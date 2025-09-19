@@ -262,13 +262,12 @@
         .bookmark-title {
             font-weight: 600;
             font-size: 16px;
-            text-decoration: none;
             color: var(--text-primary);
             flex: 1;
             min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            line-height: 1.4;
+            word-wrap: break-word;
+            cursor: default;
         }
 
         .bookmark-comment {
@@ -302,16 +301,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .btn-group-left {
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-group-right {
-            display: flex;
-            gap: 8px;
         }
 
         .btn-small {
@@ -507,6 +496,13 @@
             }
         }
 
+        // 全てのブックマーク項目を閉じる
+        function closeAllBookmarkItems() {
+            document.querySelectorAll('.bookmark-item').forEach(item => {
+                item.classList.remove('focused');
+            });
+        }
+
         // ブックマーク項目のフォーカス切り替え
         function toggleBookmarkFocus(id) {
             // 全ての項目からfocusedクラスを削除
@@ -577,22 +573,18 @@
                     <div class="bookmark-content">
                         <div class="bookmark-header">
                             <span class="bookmark-code">${bookmark.code}</span>
-                            <a href="${bookmark.url}" target="_blank" class="bookmark-title" onclick="event.stopPropagation()">${bookmark.title}</a>
+                            <div class="bookmark-title">${bookmark.title}</div>
                         </div>
                         ${bookmark.comment ? `<div class="bookmark-comment">"${bookmark.comment}"</div>` : ''}
                         <div class="bookmark-details">
                             <div class="bookmark-url">${bookmark.url}</div>
                             <div class="bookmark-actions">
-                                <div class="btn-group-left">
-                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openBookmark('${bookmark.url}')">
-                                        開く
-                                    </button>
-                                </div>
-                                <div class="btn-group-right">
-                                    <button class="btn btn-destructive btn-small" onclick="event.stopPropagation(); deleteBookmark(${bookmark.id})">
-                                        削除
-                                    </button>
-                                </div>
+                                <button class="btn btn-destructive btn-small" onclick="event.stopPropagation(); deleteBookmark(${bookmark.id})">
+                                    削除
+                                </button>
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openBookmark('${bookmark.url}')">
+                                    開く
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -886,7 +878,7 @@
             }
         }
 
-        // Enter キーでブックマーク追加とコメント文字数カウント
+        // Enter キーでブックマーク追加とコメント文字数カウント、フォーカス管理
         document.getElementById('url').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addBookmark();
         });
@@ -897,6 +889,15 @@
         document.getElementById('comment').addEventListener('keypress', (e) => {
             if (e.key === 'Enter' && e.ctrlKey) addBookmark();
         });
+
+        // フォーカス管理 - 検索ボックスとフォーム要素にフォーカスが当たったら項目を閉じる
+        document.getElementById('search').addEventListener('focus', closeAllBookmarkItems);
+        document.getElementById('url').addEventListener('focus', closeAllBookmarkItems);
+        document.getElementById('title').addEventListener('focus', closeAllBookmarkItems);
+        document.getElementById('comment').addEventListener('focus', closeAllBookmarkItems);
+        
+        // フォームヘッダークリック時も項目を閉じる
+        document.querySelector('.form-header').addEventListener('click', closeAllBookmarkItems);
 
         // 初期化時に共有データ処理
         window.addEventListener('DOMContentLoaded', () => {
