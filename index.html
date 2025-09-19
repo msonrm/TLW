@@ -1002,17 +1002,6 @@
                 const label = element.getAttribute('data-label');
                 addLongPressListener(element, text, label);
             });
-
-            // ボタンイベントの追加確認（デバッグ用）
-            document.querySelectorAll('.btn').forEach(button => {
-                if (button.textContent.includes('コメント編集')) {
-                    button.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        const bookmarkId = parseInt(this.getAttribute('onclick').match(/editBookmark\((\d+)\)/)[1]);
-                        editBookmark(bookmarkId);
-                    });
-                }
-            });
         }
 
         // 固定ヘッダーの表示/非表示制御
