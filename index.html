@@ -977,10 +977,10 @@
                                     削除
                                 </button>
                                 <div class="bookmark-actions-right">
-                                    <button class="btn btn-small" onclick="event.stopPropagation(); editBookmark(${bookmark.id})">
+                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); editBookmark(${bookmark.id})">
                                         コメント編集
                                     </button>
-                                    <button class="btn btn-small" onclick="event.stopPropagation(); openBookmark('${bookmark.url}')">
+                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openBookmark('${bookmark.url}')">
                                         開く
                                     </button>
                                 </div>
@@ -989,6 +989,8 @@
                     </div>
                 </div>
             `).join('');
+
+            // 追加の安全策を削除して、シンプルな動作に戻す
         }
 
         // 固定ヘッダーの表示/非表示制御
