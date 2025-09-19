@@ -590,6 +590,25 @@
             }
         }
 
+        // ブックマーク編集
+        function editBookmark(id) {
+            const bookmark = bookmarks.find(b => b.id === id);
+            if (!bookmark) return;
+            
+            const newComment = prompt('コメントを編集:', bookmark.comment || '');
+            
+            // キャンセルされた場合は何もしない
+            if (newComment === null) return;
+            
+            // コメントを更新
+            bookmark.comment = newComment.trim();
+            localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
+            renderBookmarks();
+            
+            // 編集完了の通知
+            showToast('コメントを更新しました！');
+        }
+
         // 全てのブックマーク項目を閉じる
         function closeAllBookmarkItems() {
             document.querySelectorAll('.bookmark-item').forEach(item => {
@@ -675,6 +694,9 @@
                             <div class="bookmark-actions">
                                 <button class="btn btn-destructive btn-small" onclick="event.stopPropagation(); deleteBookmark(${bookmark.id})">
                                     削除
+                                </button>
+                                <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); editBookmark(${bookmark.id})">
+                                    編集
                                 </button>
                                 <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openBookmark('${bookmark.url}')">
                                     開く
