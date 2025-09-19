@@ -34,6 +34,13 @@
             --border-color: #C6C6C8;
             --destructive-color: #FF3B30;
             --success-color: #34C759;
+            --header-height: 140px;
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --header-height: 160px;
+            }
         }
 
         @media (prefers-color-scheme: dark) {
@@ -51,26 +58,110 @@
             background-color: var(--background-color);
             color: var(--text-primary);
             line-height: 1.5;
+            padding-top: var(--header-height);
+            overscroll-behavior-y: contain;
+            touch-action: pan-y;
         }
 
         .header {
             background-color: var(--surface-color);
             border-bottom: 0.5px solid var(--border-color);
-            padding: 16px 20px;
-            position: sticky;
+            padding: 16px 20px 20px 20px;
+            position: fixed;
             top: 0;
+            left: 0;
+            right: 0;
             z-index: 100;
+            height: var(--header-height);
         }
 
-        .header h1 {
-            font-size: 34px;
+        .header-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .header-title h1 {
+            font-size: 28px;
             font-weight: 700;
-            margin-bottom: 8px;
+            color: var(--text-primary);
+            margin: 0;
+            white-space: nowrap;
         }
 
-        .header p {
+        .header-subtitle {
             color: var(--text-secondary);
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        .help-button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .help-button:hover {
+            background-color: rgba(0, 122, 255, 0.1);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
             font-size: 16px;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            min-width: 0;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .add-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .add-button:hover {
+            background-color: #0056CC;
+            transform: scale(1.05);
+        }
+
+        .add-button:active {
+            transform: scale(0.95);
         }
 
         .container {
@@ -85,50 +176,29 @@
             margin-bottom: 20px;
             border: 0.5px solid var(--border-color);
             overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease, margin 0.3s ease;
         }
 
-        .form-header {
-            padding: 16px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            user-select: none;
-            transition: background-color 0.2s;
-        }
-
-        .form-header:hover {
-            background-color: rgba(0, 122, 255, 0.05);
-        }
-
-        .form-header h3 {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-        }
-
-        .toggle-icon {
-            font-size: 24px;
-            font-weight: 300;
-            color: var(--primary-color);
-            transition: transform 0.3s ease;
-        }
-
-        .toggle-icon.expanded {
-            transform: rotate(45deg);
+        .add-form.expanded {
+            max-height: 500px;
+            opacity: 1;
+            transform: translateY(0);
+            margin-bottom: 20px;
         }
 
         .form-content {
-            max-height: 0;
-            overflow: hidden;
-            padding: 0 20px;
-            transition: max-height 0.3s ease, padding 0.3s ease;
+            padding: 20px;
         }
 
-        .form-content.expanded {
-            max-height: 500px;
-            padding: 20px;
+        .form-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            text-align: center;
         }
 
         .form-group {
@@ -209,9 +279,16 @@
             background-color: var(--destructive-color);
         }
 
-        .form-content .btn {
-            margin-left: auto;
-            display: block;
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
         }
 
         .bookmarks-list {
@@ -253,10 +330,10 @@
 
         .bookmark-code {
             display: inline-block;
-            background-color: var(--primary-color);
+            background-color: #8E8E93;
             color: white;
             font-family: 'SF Mono', Monaco, monospace;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             padding: 4px 8px;
             border-radius: 6px;
@@ -278,7 +355,6 @@
         .bookmark-comment {
             color: var(--text-secondary);
             font-size: 14px;
-            font-style: italic;
             line-height: 1.4;
             margin-bottom: 8px;
         }
@@ -339,53 +415,211 @@
             color: var(--text-primary);
         }
 
-        .search-box {
-            margin-bottom: 20px;
+        /* ヘルプダイアログ */
+        .help-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
-        .search-box input {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            font-size: 16px;
+        .help-dialog.show {
+            display: flex;
+        }
+
+        .help-content {
             background-color: var(--surface-color);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            animation: dialogSlideIn 0.3s ease;
+        }
+
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .help-header h3 {
+            font-size: 20px;
+            font-weight: 700;
             color: var(--text-primary);
         }
 
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .close-button:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .help-section {
+            margin-bottom: 20px;
+        }
+
+        .help-section h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .help-section p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .help-section ul {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            padding-left: 20px;
+        }
+
+        .help-section li {
+            margin-bottom: 4px;
+        }
+
+        .code-example {
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+
+        @keyframes dialogSlideIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
         @media (max-width: 768px) {
+            .header {
+                padding: 12px 16px 16px 16px;
+            }
+
+            .header-title h1 {
+                font-size: 24px;
+            }
+
+            .header-subtitle {
+                font-size: 12px;
+            }
+
+            .search-input {
+                font-size: 16px;
+                min-width: 120px;
+            }
+
             .container {
                 padding: 16px;
             }
-            
-            .header {
-                padding: 12px 16px;
-            }
-            
+
             .bookmark-actions {
                 flex-direction: row !important;
             }
-            
-            .form-content .btn {
-                margin-left: auto;
-                display: block;
+
+            .help-content {
+                margin: 10px;
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 10px 12px 12px 12px;
+                --header-height: 160px;
+            }
+
+            .header-title {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+                margin-bottom: 12px;
+            }
+
+            .header-title h1 {
+                font-size: 20px;
+                margin: 0;
+            }
+
+            .header-subtitle {
+                margin-left: 0;
+                font-size: 11px;
+            }
+
+            .help-button {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+            }
+
+            .search-input {
+                min-width: 100px;
+                padding: 8px 14px;
+            }
+
+            .add-button {
+                width: 40px;
+                height: 40px;
+                font-size: 22px;
             }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>TLW</h1>
-        <p>パーソナルブックマーク管理</p>
+        <div class="header-title">
+            <div>
+                <h1>TLW<span class="header-subtitle">- パーソナルブックマーク管理</span></h1>
+            </div>
+            <button class="help-button" onclick="showHelpDialog()" title="ヘルプ">
+                ❓
+            </button>
+        </div>
+        <div class="header-controls">
+            <input type="text" class="search-input" id="search" placeholder="ブックマークを検索..." oninput="filterBookmarks()">
+            <button class="add-button" onclick="toggleAddForm()" title="ブックマークを追加">
+                +
+            </button>
+        </div>
     </div>
 
     <div class="container">
         <div class="add-form" id="addForm">
-            <div class="form-header" onclick="toggleAddForm()">
-                <h3>ブックマークを追加</h3>
-                <div class="toggle-icon" id="toggleIcon">+</div>
-            </div>
-            <div class="form-content" id="formContent">
+            <div class="form-content">
+                <h3 class="form-title">ブックマークを追加</h3>
                 <div class="form-group">
                     <label for="url">URL</label>
                     <input type="url" id="url" placeholder="https://example.com" required>
@@ -401,18 +635,72 @@
                         <span id="charCount">0</span>/200文字
                     </div>
                 </div>
-                <button class="btn" onclick="addBookmark()">ブックマーク追加</button>
+                <div class="form-actions">
+                    <button class="btn btn-cancel" onclick="closeAddForm()">キャンセル</button>
+                    <button class="btn" onclick="addBookmark()">追加</button>
+                </div>
             </div>
-        </div>
-
-        <div class="search-box">
-            <input type="text" id="search" placeholder="ブックマークを検索..." oninput="filterBookmarks()">
         </div>
 
         <div class="bookmarks-list" id="bookmarksList">
             <div class="empty-state">
                 <h3>ブックマークがありません</h3>
-                <p>上のフォームからブックマークを追加してください</p>
+                <p>右上の + ボタンからブックマークを追加してください</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ヘルプダイアログ -->
+    <div class="help-dialog" id="helpDialog">
+        <div class="help-content">
+            <div class="help-header">
+                <h3>TLW の使い方</h3>
+                <button class="close-button" onclick="closeHelpDialog()">×</button>
+            </div>
+            
+            <div class="help-section">
+                <p>TLWは、ウェブサイトのブックマークを効率的に管理するアプリです。ブラウザの標準ブックマーク機能とは独立して動作します。</p>
+                <p><strong>TLW</strong>は「Three-Letter Words」の略で、各ブックマークに付与される3文字のアルファベットコードに由来しています。</p>
+            </div>
+            
+            <div class="help-section">
+                <h4>🔖 ブックマーク追加・共有機能</h4>
+                <p>右上の + ボタンを押してフォームを開き、URLとタイトル、コメントを入力して保存できます。</p>
+                <p>また、このアプリをホーム画面に追加（PWAとしてインストール）した後は、他のアプリから「共有」を使ってTLWを選択すると、URLが自動で入力された状態でフォームが開きます。<br>
+                <small>※共有機能は現在Android端末でのみ利用可能です。iOS等では対応していません。</small></p>
+            </div>
+
+            <div class="help-section">
+                <h4>🏷️ 3文字コード</h4>
+                <p>各ブックマークには自動で3文字のアルファベットコード（子音のみ）が生成されます。これにより素早く識別できるほか、紙の手帳などアナログなメモツールに書き写すときにも便利です。</p>
+                <div class="code-example">例: DTR, XYZ, RST</div>
+            </div>
+
+            <div class="help-section">
+                <h4>🔍 検索機能</h4>
+                <p>上部の検索欄で以下の項目から検索できます：</p>
+                <ul>
+                    <li>タイトル</li>
+                    <li>URL</li>
+                    <li>3文字コード</li>
+                    <li>コメント</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h4>📋 ブックマーク項目の操作</h4>
+                <p>保存されたブックマーク項目をタップすると詳細が表示されます。各要素で以下の操作が可能です：</p>
+                <ul>
+                    <li><strong>長押し</strong>: タイトル、コメント、URL、3文字コードをクリップボードにコピー</li>
+                    <li><strong>コメント編集ボタン</strong>: コメントの追加・編集</li>
+                    <li><strong>開くボタン</strong>: ブックマークを新しいタブで開く</li>
+                    <li><strong>削除ボタン</strong>: ブックマークを完全削除</li>
+                </ul>
+            </div>
+
+            <div class="help-section">
+                <h4>💾 データ保存</h4>
+                <p>全てのブックマークはお使いのデバイスのブラウザに保存されます。データは外部に送信されません。</p>
             </div>
         </div>
     </div>
@@ -430,20 +718,18 @@
             'SXY', 'XXX', 'WCK', 'THC', 'VJN', 'STD', 'LSD', 'PCP', 'DMN', 'MFF', 
             'PHK', 'PHC', 'PHQ', 'XTC', 'MLF', 'RCK', 'PMS', 'NDZ', 'NDS', 'WTF', 
             'CPD', 'DQN', 'NTR', 'HSP',
-            // 追加の不適切な組み合わせ
             'SEX', 'GAY', 'ASS', 'TIT', 'CUM', 'FAG', 'DIC', 'COK', 'COC', 'PIZ', 
             'VAG', 'VJJ', 'BLJ', 'FLK', 'SUK', 'BJS', 'HNJ', 'ANL', 'ORG', 'CLM', 
             'WOR', 'SLV', 'MST', 'JRK', 'STR', 'HOR', 'WHO', 'BIT', 'DAM', 'HEL', 
             'GOD', 'JES', 'CHR', 'ISL', 'JEW', 'MUS', 'BUD', 'HIN', 'SIK', 'ATH',
-            // 薬物・暴力関連
             'GUN', 'KIL', 'DIE', 'WAR', 'HIT', 'CUT', 'STB', 'SHO', 'BOB', 'TNT',
             'ICE', 'POT', 'WED', 'JNT', 'HGH', 'COK', 'CRC', 'MDM', 'GHB', 'KET',
-            // その他の問題のある組み合わせ
             'HIV', 'AIDS', 'STI', 'HPV', 'HSV', 'HEP', 'SYP', 'GON', 'CHL', 'CRB',
             'FAT', 'UGL', 'STU', 'DUM', 'LOZ', 'SUX', 'GAG', 'PUK', 'VOM', 'URN'
         ]);
         
         let bookmarks = JSON.parse(localStorage.getItem('tlw-bookmarks') || '[]');
+        let formVisible = false;
 
         // 3文字のランダムコードを生成
         function generateCode() {
@@ -451,7 +737,6 @@
             let attempts = 0;
             const maxAttempts = 10000;
 
-            // 直近500件のコードを取得（重複チェック用）
             const recentCodes = new Set(
                 bookmarks.slice(0, 500).map(b => b.code)
             );
@@ -463,11 +748,9 @@
                 }
                 attempts++;
                 
-                // 適切なコードが見つからない場合、直近500件との重複チェックのみを緩和
                 if (attempts > maxAttempts) {
                     console.warn('適切なコードの生成に時間がかかっています。古いブックマークとの重複を許可します。');
                     
-                    // フォールバック：全ブックマークとの重複チェックを緩和するが、不適切コードは除外維持
                     let fallbackAttempts = 0;
                     const maxFallbackAttempts = 1000;
                     
@@ -478,7 +761,7 @@
                         }
                         fallbackAttempts++;
                     } while (
-                        (INAPPROPRIATE_CODES.has(code) || isInappropriatePattern(code)) && // 不適切コードは絶対に除外
+                        (INAPPROPRIATE_CODES.has(code) || isInappropriatePattern(code)) &&
                         fallbackAttempts < maxFallbackAttempts
                     );
                     
@@ -486,41 +769,28 @@
                 }
                 
             } while (
-                recentCodes.has(code) || // 直近500件との重複
-                INAPPROPRIATE_CODES.has(code) || // 不適切なコードリストに含まれる（必須）
-                isInappropriatePattern(code) // パターンベースの追加チェック（必須）
+                recentCodes.has(code) ||
+                INAPPROPRIATE_CODES.has(code) ||
+                isInappropriatePattern(code)
             );
 
             return code;
         }
 
-        // パターンベースの不適切な組み合わせをチェック
         function isInappropriatePattern(code) {
-            // 同じ文字が3つ連続（例：BBB, CCC）
             if (code[0] === code[1] && code[1] === code[2]) {
                 return true;
             }
             
-            // 特定のパターンをチェック
             const patterns = [
-                /^.SS$/, // 末尾がSS
-                /^S.S$/, // SxS形式
-                /^SS.$/, // 先頭がSS
-                /^.XX$/, // 末尾がXX
-                /^X.X$/, // XxX形式
-                /^XX.$/, // 先頭がXX
-                /^.ZZ$/, // 末尾がZZ
-                /^Z.Z$/, // ZxZ形式
+                /^.SS$/, /^S.S$/, /^SS.$/, /^.XX$/, /^X.X$/, /^XX.$/, /^.ZZ$/, /^Z.Z$/,
             ];
             
             return patterns.some(pattern => pattern.test(code));
         }
 
-        // URLからタイトルを取得（簡易版）
         async function fetchTitle(url) {
             try {
-                // CORS制限により、実際のタイトル取得は難しいため
-                // URLから推定タイトルを生成
                 const domain = new URL(url).hostname.replace('www.', '');
                 return domain;
             } catch (error) {
@@ -528,14 +798,51 @@
             }
         }
 
-        // 文字数カウント更新
         function updateCharCount() {
             const commentInput = document.getElementById('comment');
             const charCount = document.getElementById('charCount');
             charCount.textContent = commentInput.value.length;
         }
 
-        // ブックマーク追加
+        function toggleAddForm() {
+            const addForm = document.getElementById('addForm');
+            const addButton = document.querySelector('.add-button');
+            
+            if (formVisible) {
+                closeAddForm();
+            } else {
+                // フォームを表示
+                addForm.classList.add('expanded');
+                addButton.innerHTML = '×';
+                addButton.style.transform = 'rotate(45deg)';
+                formVisible = true;
+                
+                // URLフィールドにフォーカス
+                setTimeout(() => {
+                    document.getElementById('url').focus();
+                }, 300);
+                
+                // 他のブックマーク項目を閉じる
+                closeAllBookmarkItems();
+            }
+        }
+
+        function closeAddForm() {
+            const addForm = document.getElementById('addForm');
+            const addButton = document.querySelector('.add-button');
+            
+            addForm.classList.remove('expanded');
+            addButton.innerHTML = '+';
+            addButton.style.transform = 'rotate(0deg)';
+            formVisible = false;
+            
+            // フォームをクリア
+            document.getElementById('url').value = '';
+            document.getElementById('title').value = '';
+            document.getElementById('comment').value = '';
+            updateCharCount();
+        }
+
         async function addBookmark() {
             const urlInput = document.getElementById('url');
             const titleInput = document.getElementById('title');
@@ -547,7 +854,6 @@
                 return;
             }
 
-            // URLの形式チェック
             try {
                 new URL(url);
             } catch (error) {
@@ -572,106 +878,48 @@
             bookmarks.unshift(bookmark);
             localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
             
-            urlInput.value = '';
-            titleInput.value = '';
-            commentInput.value = '';
-            updateCharCount();
-            
-            // フォームを折りたたむ
-            const formContent = document.getElementById('formContent');
-            const toggleIcon = document.getElementById('toggleIcon');
-            formContent.classList.remove('expanded');
-            toggleIcon.classList.remove('expanded');
-            
+            closeAddForm();
             renderBookmarks();
+            showToast('ブックマークを追加しました');
         }
 
-        // ブックマーク削除
         function deleteBookmark(id) {
             if (confirm('このブックマークを削除しますか？')) {
                 bookmarks = bookmarks.filter(b => b.id !== id);
                 localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
                 renderBookmarks();
+                showToast('ブックマークを削除しました');
             }
         }
 
-        // ブックマーク編集
-        function editBookmark(id) {
-            const bookmark = bookmarks.find(b => b.id === id);
-            if (!bookmark) return;
-            
-            const newComment = prompt('コメントを編集:', bookmark.comment || '');
-            
-            // キャンセルされた場合は何もしない
-            if (newComment === null) return;
-            
-            // コメントを更新
-            bookmark.comment = newComment.trim();
-            localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
-            renderBookmarks();
-            
-            // 編集完了の通知
-            showToast('コメントを更新しました！');
-        }
-
-        // 全てのブックマーク項目を閉じる
         function closeAllBookmarkItems() {
             document.querySelectorAll('.bookmark-item').forEach(item => {
                 item.classList.remove('focused');
             });
         }
 
-        // ブックマーク項目のフォーカス切り替え
         function toggleBookmarkFocus(id) {
+            const clickedItem = event.target.closest('.bookmark-item');
+            if (!clickedItem) return;
+            
+            // 既に展開されている項目かチェック
+            const isAlreadyFocused = clickedItem.classList.contains('focused');
+            
             // 全ての項目からfocusedクラスを削除
             document.querySelectorAll('.bookmark-item').forEach(item => {
                 item.classList.remove('focused');
             });
             
-            // クリックされた項目にfocusedクラスを追加
-            const clickedItem = event.target.closest('.bookmark-item');
-            if (clickedItem) {
+            // クリックされた項目が既に展開されていなかった場合のみ展開
+            if (!isAlreadyFocused) {
                 clickedItem.classList.add('focused');
             }
         }
 
-        // ブックマークを新しいタブで開く
         function openBookmark(url) {
             window.open(url, '_blank');
         }
 
-        // フォームの表示切り替え
-        function toggleAddForm() {
-            const formContent = document.getElementById('formContent');
-            const toggleIcon = document.getElementById('toggleIcon');
-            
-            formContent.classList.toggle('expanded');
-            toggleIcon.classList.toggle('expanded');
-            
-            if (formContent.classList.contains('expanded')) {
-                // フォームを開いた時にURLフィールドにフォーカス
-                setTimeout(() => {
-                    document.getElementById('url').focus();
-                }, 300);
-            }
-        }
-
-        // フォームを展開する
-        function expandAddForm() {
-            const formContent = document.getElementById('formContent');
-            const toggleIcon = document.getElementById('toggleIcon');
-            
-            if (!formContent.classList.contains('expanded')) {
-                formContent.classList.add('expanded');
-                toggleIcon.classList.add('expanded');
-                
-                setTimeout(() => {
-                    document.getElementById('url').focus();
-                }, 300);
-            }
-        }
-
-        // ブックマーク一覧レンダリング
         function renderBookmarks(filteredBookmarks = null) {
             const container = document.getElementById('bookmarksList');
             const bookmarksToShow = filteredBookmarks || bookmarks;
@@ -680,7 +928,8 @@
                 container.innerHTML = `
                     <div class="empty-state">
                         <h3>${filteredBookmarks ? '検索結果がありません' : 'ブックマークがありません'}</h3>
-                        <p>${filteredBookmarks ? '別のキーワードで検索してみてください' : '上のフォームからブックマークを追加してください'}</p>
+                        <p>${filteredBookmarks ? '別のキーワードで検索してみてください' : '右上の + ボタンからブックマークを追加してください'}</p>
+                        ${!filteredBookmarks ? '<p>他のアプリからも共有できます（アプリをインストール後、Android端末のみ）</p>' : ''}
                     </div>
                 `;
                 return;
@@ -690,21 +939,21 @@
                 <div class="bookmark-item" onclick="toggleBookmarkFocus(${bookmark.id})">
                     <div class="bookmark-content">
                         <div class="bookmark-header">
-                            <span class="bookmark-code">${bookmark.code}</span>
-                            <div class="bookmark-title">${bookmark.title}</div>
+                            <span class="bookmark-code" data-copy="${bookmark.code}" data-label="コード">${bookmark.code}</span>
+                            <div class="bookmark-title" data-copy="${bookmark.title}" data-label="タイトル">${bookmark.title}</div>
                         </div>
-                        ${bookmark.comment ? `<div class="bookmark-comment">"${bookmark.comment}"</div>` : ''}
+                        ${bookmark.comment ? `<div class="bookmark-comment" data-copy="${bookmark.comment}" data-label="コメント">"${bookmark.comment}"</div>` : ''}
                         <div class="bookmark-details">
-                            <div class="bookmark-url">${bookmark.url}</div>
+                            <div class="bookmark-url" data-copy="${bookmark.url}" data-label="URL">${bookmark.url}</div>
                             <div class="bookmark-actions">
                                 <button class="btn btn-destructive btn-small" onclick="event.stopPropagation(); deleteBookmark(${bookmark.id})">
                                     削除
                                 </button>
                                 <div class="bookmark-actions-right">
-                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); editBookmark(${bookmark.id})">
+                                    <button class="btn btn-small" onclick="event.stopPropagation(); editBookmark(${bookmark.id})">
                                         コメント編集
                                     </button>
-                                    <button class="btn btn-secondary btn-small" onclick="event.stopPropagation(); openBookmark('${bookmark.url}')">
+                                    <button class="btn btn-small" onclick="event.stopPropagation(); openBookmark('${bookmark.url}')">
                                         開く
                                     </button>
                                 </div>
@@ -713,9 +962,15 @@
                     </div>
                 </div>
             `).join('');
+
+            // 長押しでコピー機能を追加
+            document.querySelectorAll('[data-copy]').forEach(element => {
+                const text = element.getAttribute('data-copy');
+                const label = element.getAttribute('data-label');
+                addLongPressListener(element, text, label);
+            });
         }
 
-        // ブックマーク検索
         function filterBookmarks() {
             const searchTerm = document.getElementById('search').value.toLowerCase();
             if (!searchTerm) {
@@ -733,12 +988,11 @@
             renderBookmarks(filtered);
         }
 
-        // トースト表示
         function showToast(message) {
             const toast = document.createElement('div');
             toast.style.cssText = `
                 position: fixed;
-                top: 80px;
+                top: calc(var(--header-height) + 20px);
                 left: 50%;
                 transform: translateX(-50%);
                 background: var(--success-color);
@@ -752,7 +1006,6 @@
             `;
             toast.textContent = message;
             
-            // アニメーション追加
             if (!document.getElementById('toast-style')) {
                 const style = document.createElement('style');
                 style.id = 'toast-style';
@@ -772,6 +1025,17 @@
             }, 2500);
         }
 
+        // ヘルプダイアログ関数
+        function showHelpDialog() {
+            document.getElementById('helpDialog').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeHelpDialog() {
+            document.getElementById('helpDialog').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
         // URL共有パラメータの処理
         function handleSharedData() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -779,37 +1043,30 @@
             const sharedTitle = urlParams.get('title');
             const sharedText = urlParams.get('text');
             
-            // DOM要素の取得を複数の方法で試行
             let urlInput, titleInput;
             
-            // 方法1: getElementById
             urlInput = document.getElementById('url');
             titleInput = document.getElementById('title');
             
-            // 方法2: querySelector
             if (!urlInput) urlInput = document.querySelector('input[id="url"]');
             if (!titleInput) titleInput = document.querySelector('input[id="title"]');
             
-            // 方法3: querySelectorAll
             if (!urlInput) urlInput = document.querySelectorAll('input[type="url"]')[0];
             if (!titleInput) titleInput = document.querySelectorAll('input[type="text"]')[0];
             
             if (sharedUrl || sharedTitle || sharedText) {
                 if (urlInput && titleInput) {
                     try {
-                        // フォーカスを外す（一時的に）
                         if (document.activeElement) {
                             document.activeElement.blur();
                         }
                         
-                        // URLがある場合の処理
                         if (sharedUrl) {
                             urlInput.value = sharedUrl;
                             urlInput.dispatchEvent(new Event('input', { bubbles: true }));
                             urlInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         
-                        // タイトル設定の処理
                         if (sharedTitle) {
                             titleInput.value = sharedTitle;
                             titleInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -820,7 +1077,6 @@
                             titleInput.dispatchEvent(new Event('change', { bubbles: true }));
                         }
                         
-                        // Androidの共有では、URLがtextパラメータに含まれる場合がある
                         if (!sharedUrl && sharedText) {
                             const urlPattern = /https?:\/\/[^\s]+/g;
                             const foundUrls = sharedText.match(urlPattern);
@@ -829,7 +1085,6 @@
                                 urlInput.dispatchEvent(new Event('input', { bubbles: true }));
                                 urlInput.dispatchEvent(new Event('change', { bubbles: true }));
                                 
-                                // URLを除いたテキストをタイトルに設定
                                 const remainingText = sharedText.replace(foundUrls[0], '').trim();
                                 if (remainingText) {
                                     titleInput.value = remainingText;
@@ -839,7 +1094,6 @@
                             }
                         }
                         
-                        // 強制的に値を再設定（バックアップ処理）
                         setTimeout(() => {
                             if (sharedUrl && !urlInput.value) {
                                 urlInput.setAttribute('value', sharedUrl);
@@ -852,10 +1106,9 @@
                             }
                         }, 500);
                         
-                        // フォーカス設定
                         setTimeout(() => {
                             if (urlInput.value) {
-                                expandAddForm(); // フォームを展開
+                                toggleAddForm();
                                 urlInput.focus();
                                 urlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             }
@@ -865,29 +1118,9 @@
                         console.error('Error setting form values:', error);
                     }
                     
-                    // パラメータをクリアして履歴をきれいに保つ
                     const newUrl = window.location.pathname;
                     window.history.replaceState({}, document.title, newUrl);
                     
-                    // 視覚的フィードバック
-                    const addForm = document.querySelector('.add-form');
-                    addForm.style.animation = 'highlight 1s ease-out';
-                    
-                    // ハイライトアニメーション用CSS
-                    if (!document.getElementById('highlight-style')) {
-                        const style = document.createElement('style');
-                        style.id = 'highlight-style';
-                        style.textContent = `
-                            @keyframes highlight {
-                                0% { background-color: var(--primary-color); opacity: 0.1; }
-                                50% { background-color: var(--primary-color); opacity: 0.2; }
-                                100% { background-color: var(--surface-color); opacity: 1; }
-                            }
-                        `;
-                        document.head.appendChild(style);
-                    }
-                    
-                    // トースト表示
                     showToast('共有されたサイトを受信しました！');
                 }
             }
@@ -900,7 +1133,6 @@
                     .then((registration) => {
                         console.log('SW registered: ', registration);
                         
-                        // 更新チェック
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             console.log('New SW installing...');
@@ -908,14 +1140,12 @@
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed') {
                                     if (navigator.serviceWorker.controller) {
-                                        // 新しいバージョンが利用可能
                                         showUpdateAvailable();
                                     }
                                 }
                             });
                         });
                         
-                        // 定期的な更新チェック（5分毎）
                         setInterval(() => {
                             registration.update();
                         }, 300000);
@@ -926,7 +1156,6 @@
             });
         }
 
-        // 更新通知表示
         function showUpdateAvailable() {
             const updateBanner = document.createElement('div');
             updateBanner.style.cssText = `
@@ -943,15 +1172,12 @@
                 cursor: pointer;
                 animation: slideDown 0.3s ease;
             `;
-            updateBanner.innerHTML = `
-                📱 新しいバージョンが利用可能です。タップして更新
-            `;
+            updateBanner.innerHTML = `📱 新しいバージョンが利用可能です。タップして更新`;
             
             updateBanner.onclick = () => {
                 window.location.reload();
             };
             
-            // アニメーション追加
             if (!document.getElementById('update-style')) {
                 const style = document.createElement('style');
                 style.id = 'update-style';
@@ -965,8 +1191,6 @@
             }
             
             document.body.appendChild(updateBanner);
-            
-            // ページコンテンツを下にずらす
             document.body.style.paddingTop = '60px';
         }
 
@@ -977,13 +1201,10 @@
             console.log('beforeinstallprompt fired');
             e.preventDefault();
             deferredPrompt = e;
-            
-            // インストールボタンを表示する場合
             showInstallButton();
         });
 
         function showInstallButton() {
-            // 簡易的なインストールボタンを表示
             if (deferredPrompt) {
                 const installButton = document.createElement('button');
                 installButton.className = 'btn';
@@ -1001,7 +1222,7 @@
             }
         }
 
-        // Enter キーでブックマーク追加とコメント文字数カウント、フォーカス管理
+        // イベントリスナー
         document.getElementById('url').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addBookmark();
         });
@@ -1013,19 +1234,33 @@
             if (e.key === 'Enter' && e.ctrlKey) addBookmark();
         });
 
-        // フォーカス管理 - 検索ボックスとフォーム要素にフォーカスが当たったら項目を閉じる
+        // フォーカス管理
         document.getElementById('search').addEventListener('focus', closeAllBookmarkItems);
         document.getElementById('url').addEventListener('focus', closeAllBookmarkItems);
         document.getElementById('title').addEventListener('focus', closeAllBookmarkItems);
         document.getElementById('comment').addEventListener('focus', closeAllBookmarkItems);
-        
-        // フォームヘッダークリック時も項目を閉じる
-        document.querySelector('.form-header').addEventListener('click', closeAllBookmarkItems);
+
+        // ヘルプダイアログのクリック外で閉じる
+        document.getElementById('helpDialog').addEventListener('click', (e) => {
+            if (e.target.id === 'helpDialog') {
+                closeHelpDialog();
+            }
+        });
+
+        // ESCキーでダイアログを閉じる
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (document.getElementById('helpDialog').classList.contains('show')) {
+                    closeHelpDialog();
+                } else if (formVisible) {
+                    closeAddForm();
+                }
+            }
+        });
 
         // 初期化時に共有データ処理
         window.addEventListener('DOMContentLoaded', () => {
-            // 段階的に実行タイミングを試す
-            handleSharedData(); // 即座に実行
+            handleSharedData();
             
             setTimeout(() => {
                 handleSharedData();
@@ -1036,14 +1271,12 @@
             }, 500);
         });
         
-        // 追加の安全策として、loadイベントでも実行
         window.addEventListener('load', () => {
             setTimeout(() => {
                 handleSharedData();
             }, 200);
         });
         
-        // さらなる安全策：readyStateが変化したときも実行
         document.addEventListener('readystatechange', () => {
             if (document.readyState === 'complete') {
                 setTimeout(() => {
