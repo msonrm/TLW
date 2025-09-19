@@ -1,89 +1,1421 @@
-const CACHE_NAME = 'tlw-bookmark-v35';
-const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
-];
-
-// インストール時にキャッシュを作成
-self.addEventListener('install', (event) => {
-  console.log('Service Worker installing...');
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Caching files');
-        return cache.addAll(urlsToCache);
-      })
-      .catch((error) => {
-        console.error('Cache failed:', error);
-      })
-  );
-});
-
-// フェッチ時にキャッシュから返す
-self.addEventListener('fetch', (event) => {
-  // Share Target処理
-  const url = new URL(event.request.url);
-  
-  // 共有データを受信した場合の処理
-  if (event.request.method === 'GET' && url.searchParams.has('url')) {
-    console.log('Share target data received:', {
-      url: url.searchParams.get('url'),
-      title: url.searchParams.get('title'),
-      text: url.searchParams.get('text')
-    });
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TLW - ブックマーク</title>
     
-    // 通常のフェッチ処理に流す（パラメータ付きでindex.htmlを返す）
-    event.respondWith(
-      caches.match('./index.html')
-        .then((response) => {
-          if (response) {
-            console.log('Serving index.html for share target');
-            return response;
-          }
-          return fetch('./index.html');
-        })
-    );
-    return;
-  }
-  
-  // 通常のフェッチ処理
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // キャッシュがあればそれを返す、なければネットワークから取得
-        if (response) {
-          console.log('Serving from cache:', event.request.url);
-          return response;
+    <!-- PWA設定 -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#007AFF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TLW">
+    <link rel="apple-touch-icon" href="./icon-192.png">
+    <link rel="apple-touch-icon" sizes="192x192" href="./icon-192.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="./icon-512.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        console.log('Fetching from network:', event.request.url);
-        return fetch(event.request);
-      }
-    )
-  );
-});
 
-// 古いキャッシュを削除
-self.addEventListener('activate', (event) => {
-  console.log('Service Worker activating... v2');
-  // 即座に制御を開始
-  event.waitUntil(
-    Promise.all([
-      // 古いキャッシュを削除
-      caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            if (cacheName !== CACHE_NAME) {
-              console.log('Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
+        :root {
+            --primary-color: #007AFF;
+            --secondary-color: #5856D6;
+            --background-color: #F2F2F7;
+            --surface-color: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+            --border-color: #C6C6C8;
+            --destructive-color: #FF3B30;
+            --success-color: #34C759;
+            --header-height: 140px;
+        }
+
+        @media (max-width: 480px) {
+            :root {
+                --header-height: 160px;
             }
-          })
-        );
-      }),
-      // 即座にクライアントを制御
-      self.clients.claim()
-    ])
-  );
-});
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --background-color: #000000;
+                --surface-color: #1C1C1E;
+                --text-primary: #FFFFFF;
+                --text-secondary: #8E8E93;
+                --border-color: #38383A;
+            }
+        }
+
+        html {
+            overscroll-behavior-y: none;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+            overscroll-behavior-y: none;
+        }
+
+        .header {
+            background-color: var(--surface-color);
+            border-bottom: 0.5px solid var(--border-color);
+            padding: 16px 20px 0 20px;
+            position: static;
+            z-index: 100;
+        }
+
+        .header-fixed {
+            background-color: var(--surface-color);
+            border-bottom: 0.5px solid var(--border-color);
+            padding: 12px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: none;
+        }
+
+        .header-fixed.show {
+            display: block;
+        }
+
+        .header-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .header-title h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .header-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        .help-button {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .help-button:hover {
+            background-color: rgba(0, 122, 255, 0.1);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            padding: 16px 0;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 16px;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            min-width: 0;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .add-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            font-size: 24px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .add-button:hover {
+            background-color: #0056CC;
+            transform: scale(1.05);
+        }
+
+        .add-button:active {
+            transform: scale(0.95);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .add-form {
+            background-color: var(--surface-color);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 0.5px solid var(--border-color);
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: max-height 0.3s ease, opacity 0.3s ease, transform 0.3s ease, margin 0.3s ease;
+        }
+
+        .add-form.expanded {
+            max-height: 500px;
+            opacity: 1;
+            transform: translateY(0);
+            margin-bottom: 20px;
+        }
+
+        .form-content {
+            padding: 20px;
+        }
+
+        .form-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+        }
+
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+            transition: border-color 0.2s;
+            resize: vertical;
+            min-height: 80px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background-color: var(--text-secondary);
+        }
+
+        .btn-edit {
+            background-color: #FF9500;
+        }
+
+        .btn-open {
+            background-color: var(--primary-color);
+        }
+
+        .btn-destructive {
+            background-color: var(--destructive-color);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-cancel {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+
+        .bookmarks-list {
+            background-color: var(--surface-color);
+            border-radius: 10px;
+            border: 0.5px solid var(--border-color);
+            overflow: hidden;
+        }
+
+        .bookmark-item {
+            padding: 16px 20px;
+            border-bottom: 0.5px solid var(--border-color);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .bookmark-item:last-child {
+            border-bottom: none;
+        }
+
+        .bookmark-item:hover {
+            background-color: rgba(0, 122, 255, 0.05);
+        }
+
+        .bookmark-item.focused {
+            background-color: rgba(0, 122, 255, 0.1);
+        }
+
+        .bookmark-content {
+            width: 100%;
+        }
+
+        .bookmark-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .bookmark-code {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #6C6C70;
+            color: white;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 6px 8px;
+            border-radius: 8px;
+            letter-spacing: 2px;
+            flex-shrink: 0;
+            min-width: 58px;
+            width: 58px;
+            text-align: center;
+        }
+
+        .bookmark-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--text-primary);
+            flex: 1;
+            min-width: 0;
+            line-height: 1.4;
+            word-wrap: break-word;
+            cursor: default;
+        }
+
+        .bookmark-comment {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 8px;
+        }
+
+        .bookmark-details {
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+        }
+
+        .bookmark-item.focused .bookmark-details {
+            opacity: 1;
+            max-height: 100px;
+        }
+
+        .bookmark-url {
+            color: var(--text-secondary);
+            font-size: 14px;
+            word-break: break-all;
+            margin-bottom: 12px;
+            line-height: 1.3;
+            max-height: 2.6em;
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .bookmark-actions {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .bookmark-actions-right {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .bookmark-actions .btn {
+            flex-shrink: 0;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 14px;
+            min-width: auto;
+            white-space: nowrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        /* ヘルプダイアログ */
+        .help-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .help-dialog.show {
+            display: flex;
+        }
+
+        .help-content {
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 80vh;
+            position: relative;
+            animation: dialogSlideIn 0.3s ease;
+            overscroll-behavior-y: contain;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 24px 12px 24px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            border-radius: 12px 12px 0 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .help-body {
+            padding: 20px 24px 24px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .help-header h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .close-button {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+        .close-button:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .help-section {
+            margin-bottom: 20px;
+        }
+
+        .help-section h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .help-section p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .help-section ul {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            padding-left: 20px;
+        }
+
+        .help-section li {
+            margin-bottom: 4px;
+        }
+
+        .code-example {
+            background-color: var(--background-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-family: 'SF Mono', Monaco, monospace;
+            font-size: 14px;
+            margin: 8px 0;
+        }
+
+        @keyframes dialogSlideIn {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 12px 16px 16px 16px;
+            }
+
+            .header-title h1 {
+                font-size: 24px;
+            }
+
+            .header-subtitle {
+                font-size: 12px;
+            }
+
+            .search-input {
+                font-size: 16px;
+                min-width: 120px;
+            }
+
+            .container {
+                padding: 16px;
+            }
+
+            .bookmark-actions {
+                flex-direction: row !important;
+            }
+
+            .help-content {
+                margin: 10px;
+                padding: 0;
+            }
+
+            .help-header {
+                padding: 20px 20px 12px 20px;
+            }
+
+            .help-body {
+                padding: 16px 20px 20px 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header {
+                padding: 10px 12px 12px 12px;
+            }
+
+            .header-title {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 2px;
+                margin-bottom: 12px;
+            }
+
+            .header-title h1 {
+                font-size: 20px;
+                margin: 0;
+            }
+
+            .header-subtitle {
+                margin-left: 0;
+                font-size: 11px;
+            }
+
+            .help-button {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+            }
+
+            .search-input {
+                min-width: 100px;
+                padding: 8px 14px;
+            }
+
+            .add-button {
+                width: 40px;
+                height: 40px;
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">
+            <div>
+                <h1>TLW<span class="header-subtitle">- パーソナルブックマーク管理</span></h1>
+            </div>
+            <button class="help-button" onclick="showHelpDialog()" title="ヘルプ">
+                ❓
+            </button>
+        </div>
+        <div class="header-controls">
+            <input type="text" class="search-input" id="search" placeholder="ブックマークを検索..." oninput="filterBookmarks()">
+            <button class="add-button" onclick="toggleAddForm()" title="ブックマークを追加">
+                +
+            </button>
+        </div>
+    </div>
+
+    <!-- 固定ヘッダー（スクロール時に表示） -->
+    <div class="header-fixed" id="headerFixed">
+        <div class="header-controls">
+            <input type="text" class="search-input" id="searchFixed" placeholder="ブックマークを検索..." oninput="filterBookmarks()">
+            <button class="add-button" onclick="toggleAddForm()" title="ブックマークを追加">
+                +
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="add-form" id="addForm">
+            <div class="form-content">
+                <h3 class="form-title">ブックマークを追加</h3>
+                <div class="form-group">
+                    <label for="url">URL</label>
+                    <input type="url" id="url" placeholder="https://example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="title">タイトル（任意）</label>
+                    <input type="text" id="title" placeholder="サイトのタイトル">
+                </div>
+                <div class="form-group">
+                    <label for="comment">コメント（任意）</label>
+                    <textarea id="comment" placeholder="このサイトについてのメモ..." maxlength="200" rows="3"></textarea>
+                    <div class="char-count">
+                        <span id="charCount">0</span>/200文字
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-cancel" onclick="closeAddForm()">キャンセル</button>
+                    <button class="btn" onclick="addBookmark()">追加</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="bookmarks-list" id="bookmarksList">
+            <div class="empty-state">
+                <h3>ブックマークがありません</h3>
+                <p>右上の + ボタンからブックマークを追加してください</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ヘルプダイアログ -->
+    <div class="help-dialog" id="helpDialog">
+        <div class="help-content">
+            <div class="help-header">
+                <h3>TLW の使い方</h3>
+                <button class="close-button" onclick="closeHelpDialog()">×</button>
+            </div>
+            
+            <div class="help-body">
+                <div class="help-section">
+                    <p>TLWは、ウェブサイトのブックマークを効率的に管理するアプリです。ブラウザの標準ブックマーク機能とは独立して動作します。</p>
+                    <p><strong>TLW</strong>は「Three-Letter Words」の略で、各ブックマークに付与される3文字のアルファベットコードに由来しています。</p>
+                </div>
+                
+                <div class="help-section">
+                    <h4>🔖 ブックマーク追加・共有機能</h4>
+                    <p>右上の + ボタンを押してフォームを開き、URLとタイトル、コメントを入力して保存できます。</p>
+                    <p>また、このアプリをホーム画面に追加（PWAとしてインストール）した後は、他のアプリから「共有」を使ってTLWを選択すると、URLが自動で入力された状態でフォームが開きます。<br>
+                    <small>※共有機能は現在Android端末でのみ利用可能です。iOS等では対応していません。</small></p>
+                </div>
+
+                <div class="help-section">
+                    <h4>🏷️ 3文字コード</h4>
+                    <p>各ブックマークには自動で3文字のアルファベットコード（子音のみ）が生成されます。これにより素早く識別できるほか、紙の手帳などアナログなメモツールに書き写すときにも便利です。</p>
+                    <div class="code-example">例: DTR, XYZ, RST</div>
+                </div>
+
+                <div class="help-section">
+                    <h4>🔍 検索機能</h4>
+                    <p>上部の検索欄で以下の項目から検索できます：</p>
+                    <ul>
+                        <li>タイトル</li>
+                        <li>URL</li>
+                        <li>3文字コード</li>
+                        <li>コメント</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4>📋 ブックマーク項目の操作</h4>
+                    <p>保存されたブックマーク項目をタップすると詳細が表示されます。各ボタンで以下の操作が可能です：</p>
+                    <ul>
+                        <li><strong>コメント編集ボタン</strong>: コメントの追加・編集</li>
+                        <li><strong>開くボタン</strong>: ブックマークを新しいタブで開く</li>
+                        <li><strong>削除ボタン</strong>: ブックマークを完全削除</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h4>💾 データ保存</h4>
+                    <p>全てのブックマークはお使いのデバイスのブラウザに保存されます。データは外部に送信されません。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 母音を除いた21文字のアルファベット
+        const CONSONANTS = 'BCDFGHJKLMNPQRSTVWXYZ'.split('');
+        
+        // 不適切な3文字の組み合わせを除外するリスト
+        const INAPPROPRIATE_CODES = new Set([
+            'FCK', 'DCK', 'PNS', 'PSY', 'FGT', 'NGR', 'CNT', 'KNT', 'SHT', 'DSH', 
+            'TWT', 'BCH', 'CLT', 'KLT', 'SCK', 'LCK', 'JZZ', 'VGN', 'SJV', 'PRN', 
+            'GVR', 'PSS', 'SNM', 'SLT', 'KYK', 'KYC', 'KYQ', 'DYK', 'DYQ', 'DYC', 
+            'KKK', 'JYZ', 'PRK', 'PRC', 'PRQ', 'MYC', 'MYK', 'MYQ', 'GZZ', 'SXX', 
+            'SXY', 'XXX', 'WCK', 'THC', 'VJN', 'STD', 'LSD', 'PCP', 'DMN', 'MFF', 
+            'PHK', 'PHC', 'PHQ', 'XTC', 'MLF', 'RCK', 'PMS', 'NDZ', 'NDS', 'WTF', 
+            'CPD', 'DQN', 'NTR', 'HSP',
+            'SEX', 'GAY', 'ASS', 'TIT', 'CUM', 'FAG', 'DIC', 'COK', 'COC', 'PIZ', 
+            'VAG', 'VJJ', 'BLJ', 'FLK', 'SUK', 'BJS', 'HNJ', 'ANL', 'ORG', 'CLM', 
+            'WOR', 'SLV', 'MST', 'JRK', 'STR', 'HOR', 'WHO', 'BIT', 'DAM', 'HEL', 
+            'GOD', 'JES', 'CHR', 'ISL', 'JEW', 'MUS', 'BUD', 'HIN', 'SIK', 'ATH',
+            'GUN', 'KIL', 'DIE', 'WAR', 'HIT', 'CUT', 'STB', 'SHO', 'BOB', 'TNT',
+            'ICE', 'POT', 'WED', 'JNT', 'HGH', 'COK', 'CRC', 'MDM', 'GHB', 'KET',
+            'HIV', 'AIDS', 'STI', 'HPV', 'HSV', 'HEP', 'SYP', 'GON', 'CHL', 'CRB',
+            'FAT', 'UGL', 'STU', 'DUM', 'LOZ', 'SUX', 'GAG', 'PUK', 'VOM', 'URN'
+        ]);
+        
+        let bookmarks = JSON.parse(localStorage.getItem('tlw-bookmarks') || '[]');
+        let formVisible = false;
+
+        // 3文字のランダムコードを生成
+        function generateCode() {
+            let code;
+            let attempts = 0;
+            const maxAttempts = 10000;
+
+            const recentCodes = new Set(
+                bookmarks.slice(0, 500).map(b => b.code)
+            );
+
+            do {
+                code = '';
+                for (let i = 0; i < 3; i++) {
+                    code += CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
+                }
+                attempts++;
+                
+                if (attempts > maxAttempts) {
+                    console.warn('適切なコードの生成に時間がかかっています。古いブックマークとの重複を許可します。');
+                    
+                    let fallbackAttempts = 0;
+                    const maxFallbackAttempts = 1000;
+                    
+                    do {
+                        code = '';
+                        for (let i = 0; i < 3; i++) {
+                            code += CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
+                        }
+                        fallbackAttempts++;
+                    } while (
+                        (INAPPROPRIATE_CODES.has(code) || isInappropriatePattern(code)) &&
+                        fallbackAttempts < maxFallbackAttempts
+                    );
+                    
+                    break;
+                }
+                
+            } while (
+                recentCodes.has(code) ||
+                INAPPROPRIATE_CODES.has(code) ||
+                isInappropriatePattern(code)
+            );
+
+            return code;
+        }
+
+        function isInappropriatePattern(code) {
+            if (code[0] === code[1] && code[1] === code[2]) {
+                return true;
+            }
+            
+            const patterns = [
+                /^.SS$/, /^S.S$/, /^SS.$/, /^.XX$/, /^X.X$/, /^XX.$/, /^.ZZ$/, /^Z.Z$/,
+            ];
+            
+            return patterns.some(pattern => pattern.test(code));
+        }
+
+        async function fetchTitle(url) {
+            try {
+                const domain = new URL(url).hostname.replace('www.', '');
+                return domain;
+            } catch (error) {
+                return 'Unknown Site';
+            }
+        }
+
+        function updateCharCount() {
+            const commentInput = document.getElementById('comment');
+            const charCount = document.getElementById('charCount');
+            charCount.textContent = commentInput.value.length;
+        }
+
+        function toggleAddForm() {
+            const addForm = document.getElementById('addForm');
+            const addButton = document.querySelector('.add-button');
+            
+            if (formVisible) {
+                closeAddForm();
+            } else {
+                // フォームを表示
+                addForm.classList.add('expanded');
+                addButton.innerHTML = '×';
+                addButton.style.transform = 'rotate(45deg)';
+                formVisible = true;
+                
+                // URLフィールドにフォーカス
+                setTimeout(() => {
+                    document.getElementById('url').focus();
+                }, 300);
+                
+                // 他のブックマーク項目を閉じる
+                closeAllBookmarkItems();
+            }
+        }
+
+        function closeAddForm() {
+            const addForm = document.getElementById('addForm');
+            const addButton = document.querySelector('.add-button');
+            
+            addForm.classList.remove('expanded');
+            addButton.innerHTML = '+';
+            addButton.style.transform = 'rotate(0deg)';
+            formVisible = false;
+            
+            // フォームをクリア
+            document.getElementById('url').value = '';
+            document.getElementById('title').value = '';
+            document.getElementById('comment').value = '';
+            updateCharCount();
+        }
+
+        async function addBookmark() {
+            const urlInput = document.getElementById('url');
+            const titleInput = document.getElementById('title');
+            const commentInput = document.getElementById('comment');
+            
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert('URLを入力してください');
+                return;
+            }
+
+            try {
+                new URL(url);
+            } catch (error) {
+                alert('有効なURLを入力してください');
+                return;
+            }
+
+            const title = titleInput.value.trim() || await fetchTitle(url);
+            const comment = commentInput.value.trim();
+            const code = generateCode();
+            
+            const bookmark = {
+                id: Date.now(),
+                url: url,
+                title: title,
+                comment: comment,
+                code: code,
+                createdAt: new Date().toISOString(),
+                createdDate: new Date().toDateString()
+            };
+
+            bookmarks.unshift(bookmark);
+            localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
+            
+            closeAddForm();
+            renderBookmarks();
+            showToast('ブックマークを追加しました');
+        }
+
+        function deleteBookmark(id) {
+            if (confirm('このブックマークを削除しますか？')) {
+                bookmarks = bookmarks.filter(b => b.id !== id);
+                localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
+                renderBookmarks();
+                showToast('ブックマークを削除しました');
+            }
+        }
+
+        function closeAllBookmarkItems() {
+            document.querySelectorAll('.bookmark-item').forEach(item => {
+                item.classList.remove('focused');
+            });
+        }
+
+        // ブックマーク編集（コメントのみ）
+        function editBookmark(id) {
+            const bookmark = bookmarks.find(b => b.id === id);
+            if (!bookmark) {
+                alert('ブックマークが見つかりません');
+                return;
+            }
+            
+            const newComment = prompt('コメントを編集:', bookmark.comment || '');
+            
+            // キャンセルされた場合は何もしない
+            if (newComment === null) return;
+            
+            // コメントを更新
+            bookmark.comment = newComment.trim();
+            localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
+            renderBookmarks();
+            
+            // 編集完了の通知
+            showToast('コメントを更新しました');
+        }
+
+        function toggleBookmarkFocus(id) {
+            const clickedItem = event.target.closest('.bookmark-item');
+            if (!clickedItem) return;
+            
+            // 既に展開されている項目かチェック
+            const isAlreadyFocused = clickedItem.classList.contains('focused');
+            
+            // 全ての項目からfocusedクラスを削除
+            document.querySelectorAll('.bookmark-item').forEach(item => {
+                item.classList.remove('focused');
+            });
+            
+            // クリックされた項目が既に展開されていなかった場合のみ展開
+            if (!isAlreadyFocused) {
+                clickedItem.classList.add('focused');
+            }
+        }
+
+        function openBookmark(url) {
+            window.open(url, '_blank');
+        }
+
+        function renderBookmarks(filteredBookmarks = null) {
+            const container = document.getElementById('bookmarksList');
+            const bookmarksToShow = filteredBookmarks || bookmarks;
+
+            if (bookmarksToShow.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>${filteredBookmarks ? '検索結果がありません' : 'ブックマークがありません'}</h3>
+                        <p>${filteredBookmarks ? '別のキーワードで検索してみてください' : '右上の + ボタンからブックマークを追加してください'}</p>
+                        ${!filteredBookmarks ? '<p>他のアプリからも共有できます（アプリをインストール後、Android端末のみ）</p>' : ''}
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = bookmarksToShow.map(bookmark => `
+                <div class="bookmark-item" onclick="toggleBookmarkFocus(${bookmark.id})">
+                    <div class="bookmark-content">
+                        <div class="bookmark-header">
+                            <span class="bookmark-code">${bookmark.code}</span>
+                            <div class="bookmark-title">${bookmark.title}</div>
+                        </div>
+                        ${bookmark.comment ? `<div class="bookmark-comment">"${bookmark.comment}"</div>` : ''}
+                        <div class="bookmark-details">
+                            <div class="bookmark-url">${bookmark.url}</div>
+                            <div class="bookmark-actions">
+                                <button class="btn btn-destructive btn-small" onclick="event.stopPropagation(); deleteBookmark(${bookmark.id})">
+                                    削除
+                                </button>
+                                <div class="bookmark-actions-right">
+                                    <button class="btn btn-edit btn-small" onclick="event.stopPropagation(); editBookmark(${bookmark.id})">
+                                        コメント編集
+                                    </button>
+                                    <button class="btn btn-open btn-small" onclick="event.stopPropagation(); openBookmark('${bookmark.url}')">
+                                        開く
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 固定ヘッダーの表示/非表示制御
+        let lastScrollTop = 0;
+        const headerFixed = document.getElementById('headerFixed');
+        const searchFixed = document.getElementById('searchFixed');
+        const searchMain = document.getElementById('search');
+
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (scrollTop > 100) {
+                headerFixed.classList.add('show');
+                // 検索内容を同期
+                if (searchMain.value !== searchFixed.value) {
+                    searchFixed.value = searchMain.value;
+                }
+            } else {
+                headerFixed.classList.remove('show');
+            }
+            
+            lastScrollTop = scrollTop;
+        });
+
+        // 検索ボックスの同期
+        function syncSearchBoxes() {
+            const mainValue = document.getElementById('search').value;
+            const fixedValue = document.getElementById('searchFixed').value;
+            
+            if (mainValue !== fixedValue) {
+                document.getElementById('searchFixed').value = mainValue;
+                document.getElementById('search').value = fixedValue;
+            }
+        }
+
+        // 検索機能を更新（両方の検索ボックスに対応）
+        function filterBookmarks() {
+            syncSearchBoxes();
+            
+            const searchTerm = document.getElementById('search').value.toLowerCase();
+            if (!searchTerm) {
+                renderBookmarks();
+                return;
+            }
+
+            const filtered = bookmarks.filter(bookmark => 
+                bookmark.title.toLowerCase().includes(searchTerm) ||
+                bookmark.url.toLowerCase().includes(searchTerm) ||
+                bookmark.code.toLowerCase().includes(searchTerm) ||
+                (bookmark.comment && bookmark.comment.toLowerCase().includes(searchTerm))
+            );
+
+            renderBookmarks(filtered);
+        }
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 90px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: var(--success-color);
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                z-index: 1000;
+                font-weight: 600;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                animation: toastSlide 0.3s ease;
+            `;
+            toast.textContent = message;
+            
+            if (!document.getElementById('toast-style')) {
+                const style = document.createElement('style');
+                style.id = 'toast-style';
+                style.textContent = `
+                    @keyframes toastSlide {
+                        from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+                        to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'toastSlide 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        // ヘルプダイアログ関数
+        function showHelpDialog() {
+            document.getElementById('helpDialog').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeHelpDialog() {
+            document.getElementById('helpDialog').classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        // URL共有パラメータの処理
+        function handleSharedData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const sharedUrl = urlParams.get('url');
+            const sharedTitle = urlParams.get('title');
+            const sharedText = urlParams.get('text');
+            
+            let urlInput, titleInput;
+            
+            urlInput = document.getElementById('url');
+            titleInput = document.getElementById('title');
+            
+            if (!urlInput) urlInput = document.querySelector('input[id="url"]');
+            if (!titleInput) titleInput = document.querySelector('input[id="title"]');
+            
+            if (!urlInput) urlInput = document.querySelectorAll('input[type="url"]')[0];
+            if (!titleInput) titleInput = document.querySelectorAll('input[type="text"]')[0];
+            
+            if (sharedUrl || sharedTitle || sharedText) {
+                if (urlInput && titleInput) {
+                    try {
+                        if (document.activeElement) {
+                            document.activeElement.blur();
+                        }
+                        
+                        if (sharedUrl) {
+                            urlInput.value = sharedUrl;
+                            urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            urlInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        
+                        if (sharedTitle) {
+                            titleInput.value = sharedTitle;
+                            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            titleInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        } else if (sharedText) {
+                            titleInput.value = sharedText;
+                            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+                            titleInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                        
+                        if (!sharedUrl && sharedText) {
+                            const urlPattern = /https?:\/\/[^\s]+/g;
+                            const foundUrls = sharedText.match(urlPattern);
+                            if (foundUrls && foundUrls.length > 0) {
+                                urlInput.value = foundUrls[0];
+                                urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                urlInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                
+                                const remainingText = sharedText.replace(foundUrls[0], '').trim();
+                                if (remainingText) {
+                                    titleInput.value = remainingText;
+                                    titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+                                    titleInput.dispatchEvent(new Event('change', { bubbles: true }));
+                                }
+                            }
+                        }
+                        
+                        setTimeout(() => {
+                            if (sharedUrl && !urlInput.value) {
+                                urlInput.setAttribute('value', sharedUrl);
+                                urlInput.value = sharedUrl;
+                            }
+                            if ((sharedTitle || sharedText) && !titleInput.value) {
+                                const titleValue = sharedTitle || sharedText;
+                                titleInput.setAttribute('value', titleValue);
+                                titleInput.value = titleValue;
+                            }
+                        }, 500);
+                        
+                        setTimeout(() => {
+                            if (urlInput.value) {
+                                toggleAddForm();
+                                urlInput.focus();
+                                urlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }, 200);
+                        
+                    } catch (error) {
+                        console.error('Error setting form values:', error);
+                    }
+                    
+                    const newUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, newUrl);
+                    
+                    showToast('共有されたサイトを受信しました！');
+                }
+            }
+        }
+
+        // PWA Service Worker 登録と自動更新
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                        
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('New SW installing...');
+                            
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        showUpdateAvailable();
+                                    }
+                                }
+                            });
+                        });
+                        
+                        setInterval(() => {
+                            registration.update();
+                        }, 300000);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+
+        function showUpdateAvailable() {
+            const updateBanner = document.createElement('div');
+            updateBanner.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                background: var(--primary-color);
+                color: white;
+                padding: 12px 20px;
+                text-align: center;
+                z-index: 1001;
+                font-weight: 600;
+                cursor: pointer;
+                animation: slideDown 0.3s ease;
+            `;
+            updateBanner.innerHTML = `📱 新しいバージョンが利用可能です。タップして更新`;
+            
+            updateBanner.onclick = () => {
+                window.location.reload();
+            };
+            
+            if (!document.getElementById('update-style')) {
+                const style = document.createElement('style');
+                style.id = 'update-style';
+                style.textContent = `
+                    @keyframes slideDown {
+                        from { transform: translateY(-100%); }
+                        to { transform: translateY(0); }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            document.body.appendChild(updateBanner);
+            document.body.style.paddingTop = '60px';
+        }
+
+        // PWAインストール促進
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('beforeinstallprompt fired');
+            e.preventDefault();
+            deferredPrompt = e;
+            showInstallButton();
+        });
+
+        function showInstallButton() {
+            if (deferredPrompt) {
+                const installButton = document.createElement('button');
+                installButton.className = 'btn';
+                installButton.textContent = 'アプリをインストール';
+                installButton.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 1000;';
+                installButton.onclick = () => {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        console.log(choiceResult.outcome);
+                        deferredPrompt = null;
+                        installButton.remove();
+                    });
+                };
+                document.body.appendChild(installButton);
+            }
+        }
+
+        // イベントリスナー
+        document.getElementById('url').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addBookmark();
+        });
+        document.getElementById('title').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addBookmark();
+        });
+        document.getElementById('comment').addEventListener('input', updateCharCount);
+        document.getElementById('comment').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) addBookmark();
+        });
+
+        // フォーカス管理
+        document.getElementById('search').addEventListener('focus', closeAllBookmarkItems);
+        document.getElementById('url').addEventListener('focus', closeAllBookmarkItems);
+        document.getElementById('title').addEventListener('focus', closeAllBookmarkItems);
+        document.getElementById('comment').addEventListener('focus', closeAllBookmarkItems);
+
+        // ヘルプダイアログのクリック外で閉じる
+        document.getElementById('helpDialog').addEventListener('click', (e) => {
+            if (e.target.id === 'helpDialog') {
+                closeHelpDialog();
+            }
+        });
+
+        // ESCキーでダイアログを閉じる
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (document.getElementById('helpDialog').classList.contains('show')) {
+                    closeHelpDialog();
+                } else if (formVisible) {
+                    closeAddForm();
+                }
+            }
+        });
+
+        // 初期化時に共有データ処理
+        window.addEventListener('DOMContentLoaded', () => {
+            handleSharedData();
+            
+            setTimeout(() => {
+                handleSharedData();
+            }, 100);
+            
+            setTimeout(() => {
+                handleSharedData();
+            }, 500);
+        });
+        
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                handleSharedData();
+            }, 200);
+        });
+        
+        document.addEventListener('readystatechange', () => {
+            if (document.readyState === 'complete') {
+                setTimeout(() => {
+                    if (window.location.search) {
+                        handleSharedData();
+                    }
+                }, 100);
+            }
+        });
+
+        // Pull to refresh無効化（シンプル版）
+        function disablePullToRefresh() {
+            document.addEventListener('touchmove', function(e) {
+                if (window.scrollY === 0 && e.touches[0].clientY > e.touches[0].pageY) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
+
+        // 初期化
+        disablePullToRefresh();
+        renderBookmarks();
+    </script>
+</body>
+</html>
