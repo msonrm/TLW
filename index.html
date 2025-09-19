@@ -919,10 +919,8 @@
             }
         }
 
-        function closeAllBookmarkItems() {
-            document.querySelectorAll('.bookmark-item').forEach(item => {
-                item.classList.remove('focused');
-            });
+        function openBookmark(url) {
+            window.open(url, '_blank');
         }
 
         function toggleBookmarkFocus(id) {
