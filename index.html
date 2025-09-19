@@ -68,25 +68,10 @@
         .header {
             background-color: var(--surface-color);
             border-bottom: 0.5px solid var(--border-color);
-            padding: 16px 20px 0 20px;
-            position: static;
-            z-index: 100;
-        }
-
-        .header-fixed {
-            background-color: var(--surface-color);
-            border-bottom: 0.5px solid var(--border-color);
-            padding: 12px 20px;
-            position: fixed;
+            padding: 16px 20px 20px 20px;
+            position: sticky;
             top: 0;
-            left: 0;
-            right: 0;
             z-index: 100;
-            display: none;
-        }
-
-        .header-fixed.show {
-            display: block;
         }
 
         .header-title {
@@ -129,7 +114,7 @@
             display: flex;
             gap: 12px;
             align-items: center;
-            padding: 16px 0;
+            margin-top: 16px;
         }
 
         .search-input {
@@ -634,16 +619,6 @@
         </div>
     </div>
 
-    <!-- 固定ヘッダー（スクロール時に表示） -->
-    <div class="header-fixed" id="headerFixed">
-        <div class="header-controls">
-            <input type="text" class="search-input" id="searchFixed" placeholder="ブックマークを検索..." oninput="filterBookmarks()">
-            <button class="add-button" onclick="toggleAddForm()" title="ブックマークを追加">
-                +
-            </button>
-        </div>
-    </div>
-
     <div class="container">
         <div class="add-form" id="addForm">
             <div class="form-content">
@@ -1077,43 +1052,8 @@
             // 追加の安全策を削除して、シンプルな動作に戻す
         }
 
-        // 固定ヘッダーの表示/非表示制御
-        let lastScrollTop = 0;
-        const headerFixed = document.getElementById('headerFixed');
-        const searchFixed = document.getElementById('searchFixed');
-        const searchMain = document.getElementById('search');
-
-        window.addEventListener('scroll', () => {
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            
-            if (scrollTop > 100) {
-                headerFixed.classList.add('show');
-                // 検索内容を同期
-                if (searchMain.value !== searchFixed.value) {
-                    searchFixed.value = searchMain.value;
-                }
-            } else {
-                headerFixed.classList.remove('show');
-            }
-            
-            lastScrollTop = scrollTop;
-        });
-
-        // 検索ボックスの同期
-        function syncSearchBoxes() {
-            const mainValue = document.getElementById('search').value;
-            const fixedValue = document.getElementById('searchFixed').value;
-            
-            if (mainValue !== fixedValue) {
-                document.getElementById('searchFixed').value = mainValue;
-                document.getElementById('search').value = fixedValue;
-            }
-        }
-
-        // 検索機能を更新（両方の検索ボックスに対応）
-        function filterBookmarks() {
-            syncSearchBoxes();
-            
+        // 検索機能
+        function filterBookmarks() {            
             const searchTerm = document.getElementById('search').value.toLowerCase();
             if (!searchTerm) {
                 renderBookmarks();
@@ -1134,7 +1074,7 @@
             const toast = document.createElement('div');
             toast.style.cssText = `
                 position: fixed;
-                top: 90px;
+                top: 20px;
                 left: 50%;
                 transform: translateX(-50%);
                 background: var(--success-color);
