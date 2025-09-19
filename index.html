@@ -53,14 +53,22 @@
             }
         }
 
+        html {
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background-color: var(--background-color);
             color: var(--text-primary);
             line-height: 1.5;
+            overscroll-behavior: contain;
             overscroll-behavior-y: contain;
             touch-action: pan-y;
             -webkit-overflow-scrolling: touch;
+            position: relative;
+            min-height: 100vh;
         }
 
         .header {
@@ -1347,6 +1355,28 @@
                 }, 100);
             }
         });
+
+        // Pull to refresh無効化の追加設定
+        function disablePullToRefresh() {
+            let startY = 0;
+            
+            document.addEventListener('touchstart', function(e) {
+                startY = e.touches[0].pageY;
+            }, { passive: false });
+
+            document.addEventListener('touchmove', function(e) {
+                const currentY = e.touches[0].pageY;
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                // 最上部で下向きにスワイプしようとした場合のみ防ぐ
+                if (scrollTop === 0 && currentY > startY) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+        }
+
+        // 初期化時にpull to refresh無効化を実行
+        disablePullToRefresh();
 
         // 初期化
         renderBookmarks();
