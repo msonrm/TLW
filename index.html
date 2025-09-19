@@ -722,9 +722,8 @@
 
             <div class="help-section">
                 <h4>📋 ブックマーク項目の操作</h4>
-                <p>保存されたブックマーク項目をタップすると詳細が表示されます。各要素で以下の操作が可能です：</p>
+                <p>保存されたブックマーク項目をタップすると詳細が表示されます。各ボタンで以下の操作が可能です：</p>
                 <ul>
-                    <li><strong>長押し</strong>: タイトル、コメント、URL、3文字コードをクリップボードにコピー</li>
                     <li><strong>コメント編集ボタン</strong>: コメントの追加・編集</li>
                     <li><strong>開くボタン</strong>: ブックマークを新しいタブで開く</li>
                     <li><strong>削除ボタン</strong>: ブックマークを完全削除</li>
@@ -972,12 +971,12 @@
                 <div class="bookmark-item" onclick="toggleBookmarkFocus(${bookmark.id})">
                     <div class="bookmark-content">
                         <div class="bookmark-header">
-                            <span class="bookmark-code" data-copy="${bookmark.code}" data-label="コード">${bookmark.code}</span>
-                            <div class="bookmark-title" data-copy="${bookmark.title}" data-label="タイトル">${bookmark.title}</div>
+                            <span class="bookmark-code">${bookmark.code}</span>
+                            <div class="bookmark-title">${bookmark.title}</div>
                         </div>
-                        ${bookmark.comment ? `<div class="bookmark-comment" data-copy="${bookmark.comment}" data-label="コメント">"${bookmark.comment}"</div>` : ''}
+                        ${bookmark.comment ? `<div class="bookmark-comment">"${bookmark.comment}"</div>` : ''}
                         <div class="bookmark-details">
-                            <div class="bookmark-url" data-copy="${bookmark.url}" data-label="URL">${bookmark.url}</div>
+                            <div class="bookmark-url">${bookmark.url}</div>
                             <div class="bookmark-actions">
                                 <button class="btn btn-destructive btn-small" onclick="event.stopPropagation(); deleteBookmark(${bookmark.id})">
                                     削除
@@ -995,13 +994,6 @@
                     </div>
                 </div>
             `).join('');
-
-            // 長押しでコピー機能を追加
-            document.querySelectorAll('[data-copy]').forEach(element => {
-                const text = element.getAttribute('data-copy');
-                const label = element.getAttribute('data-label');
-                addLongPressListener(element, text, label);
-            });
         }
 
         // 固定ヘッダーの表示/非表示制御
