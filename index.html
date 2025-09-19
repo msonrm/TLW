@@ -416,13 +416,40 @@
         // 母音を除いた21文字のアルファベット
         const CONSONANTS = 'BCDFGHJKLMNPQRSTVWXYZ'.split('');
         
+        // 不適切な3文字の組み合わせを除外するリスト
+        const INAPPROPRIATE_CODES = new Set([
+            'FCK', 'DCK', 'PNS', 'PSY', 'FGT', 'NGR', 'CNT', 'KNT', 'SHT', 'DSH', 
+            'TWT', 'BCH', 'CLT', 'KLT', 'SCK', 'LCK', 'JZZ', 'VGN', 'SJV', 'PRN', 
+            'GVR', 'PSS', 'SNM', 'SLT', 'KYK', 'KYC', 'KYQ', 'DYK', 'DYQ', 'DYC', 
+            'KKK', 'JYZ', 'PRK', 'PRC', 'PRQ', 'MYC', 'MYK', 'MYQ', 'GZZ', 'SXX', 
+            'SXY', 'XXX', 'WCK', 'THC', 'VJN', 'STD', 'LSD', 'PCP', 'DMN', 'MFF', 
+            'PHK', 'PHC', 'PHQ', 'XTC', 'MLF', 'RCK', 'PMS', 'NDZ', 'NDS', 'WTF', 
+            'CPD', 'DQN', 'NTR', 'HSP',
+            // 追加の不適切な組み合わせ
+            'SEX', 'GAY', 'ASS', 'TIT', 'CUM', 'FAG', 'DIC', 'COK', 'COC', 'PIZ', 
+            'VAG', 'VJJ', 'BLJ', 'FLK', 'SUK', 'BJS', 'HNJ', 'ANL', 'ORG', 'CLM', 
+            'WOR', 'SLV', 'MST', 'JRK', 'STR', 'HOR', 'WHO', 'BIT', 'DAM', 'HEL', 
+            'GOD', 'JES', 'CHR', 'ISL', 'JEW', 'MUS', 'BUD', 'HIN', 'SIK', 'ATH',
+            // 薬物・暴力関連
+            'GUN', 'KIL', 'DIE', 'WAR', 'HIT', 'CUT', 'STB', 'SHO', 'BOB', 'TNT',
+            'ICE', 'POT', 'WED', 'JNT', 'HGH', 'COK', 'CRC', 'MDM', 'GHB', 'KET',
+            // その他の問題のある組み合わせ
+            'HIV', 'AIDS', 'STI', 'HPV', 'HSV', 'HEP', 'SYP', 'GON', 'CHL', 'CRB',
+            'FAT', 'UGL', 'STU', 'DUM', 'LOZ', 'SUX', 'GAG', 'PUK', 'VOM', 'URN'
+        ]);
+        
         let bookmarks = JSON.parse(localStorage.getItem('tlw-bookmarks') || '[]');
 
         // 3文字のランダムコードを生成
         function generateCode() {
             let code;
             let attempts = 0;
-            const maxAttempts = 1000;
+            const maxAttempts = 10000;
+
+            // 直近500件のコードを取得（重複チェック用）
+            const recentCodes = new Set(
+                bookmarks.slice(0, 500).map(b => b.code)
+            );
 
             do {
                 code = '';
@@ -430,9 +457,58 @@
                     code += CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
                 }
                 attempts++;
-            } while (bookmarks.some(b => b.code === code) && attempts < maxAttempts);
+                
+                // 適切なコードが見つからない場合、直近500件との重複チェックのみを緩和
+                if (attempts > maxAttempts) {
+                    console.warn('適切なコードの生成に時間がかかっています。古いブックマークとの重複を許可します。');
+                    
+                    // フォールバック：全ブックマークとの重複チェックを緩和するが、不適切コードは除外維持
+                    let fallbackAttempts = 0;
+                    const maxFallbackAttempts = 1000;
+                    
+                    do {
+                        code = '';
+                        for (let i = 0; i < 3; i++) {
+                            code += CONSONANTS[Math.floor(Math.random() * CONSONANTS.length)];
+                        }
+                        fallbackAttempts++;
+                    } while (
+                        (INAPPROPRIATE_CODES.has(code) || isInappropriatePattern(code)) && // 不適切コードは絶対に除外
+                        fallbackAttempts < maxFallbackAttempts
+                    );
+                    
+                    break;
+                }
+                
+            } while (
+                recentCodes.has(code) || // 直近500件との重複
+                INAPPROPRIATE_CODES.has(code) || // 不適切なコードリストに含まれる（必須）
+                isInappropriatePattern(code) // パターンベースの追加チェック（必須）
+            );
 
             return code;
+        }
+
+        // パターンベースの不適切な組み合わせをチェック
+        function isInappropriatePattern(code) {
+            // 同じ文字が3つ連続（例：BBB, CCC）
+            if (code[0] === code[1] && code[1] === code[2]) {
+                return true;
+            }
+            
+            // 特定のパターンをチェック
+            const patterns = [
+                /^.SS$/, // 末尾がSS
+                /^S.S$/, // SxS形式
+                /^SS.$/, // 先頭がSS
+                /^.XX$/, // 末尾がXX
+                /^X.X$/, // XxX形式
+                /^XX.$/, // 先頭がXX
+                /^.ZZ$/, // 末尾がZZ
+                /^Z.Z$/, // ZxZ形式
+            ];
+            
+            return patterns.some(pattern => pattern.test(code));
         }
 
         // URLからタイトルを取得（簡易版）
