@@ -68,10 +68,25 @@
         .header {
             background-color: var(--surface-color);
             border-bottom: 0.5px solid var(--border-color);
-            padding: 16px 20px 20px 20px;
-            position: sticky;
-            top: 0;
+            padding: 16px 20px 0 20px;
+            position: static;
             z-index: 100;
+        }
+
+        .header-fixed {
+            background-color: var(--surface-color);
+            border-bottom: 0.5px solid var(--border-color);
+            padding: 12px 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: none;
+        }
+
+        .header-fixed.show {
+            display: block;
         }
 
         .header-title {
@@ -114,7 +129,7 @@
             display: flex;
             gap: 12px;
             align-items: center;
-            margin-top: 16px;
+            padding: 16px 0;
         }
 
         .search-input {
@@ -619,6 +634,16 @@
         </div>
     </div>
 
+    <!-- 固定ヘッダー（スクロール時に表示） -->
+    <div class="header-fixed" id="headerFixed">
+        <div class="header-controls">
+            <input type="text" class="search-input" id="searchFixed" placeholder="ブックマークを検索..." oninput="filterBookmarks()">
+            <button class="add-button" onclick="toggleAddForm()" title="ブックマークを追加">
+                +
+            </button>
+        </div>
+    </div>
+
     <div class="container">
         <div class="add-form" id="addForm">
             <div class="form-content">
@@ -894,94 +919,32 @@
             }
         }
 
-        // URL共有パラメータの処理
-        function handleSharedData() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const sharedUrl = urlParams.get('url');
-            const sharedTitle = urlParams.get('title');
-            const sharedText = urlParams.get('text');
-            
-            let urlInput, titleInput;
-            
-            urlInput = document.getElementById('url');
-            titleInput = document.getElementById('title');
-            
-            if (!urlInput) urlInput = document.querySelector('input[id="url"]');
-            if (!titleInput) titleInput = document.querySelector('input[id="title"]');
-            
-            if (!urlInput) urlInput = document.querySelectorAll('input[type="url"]')[0];
-            if (!titleInput) titleInput = document.querySelectorAll('input[type="text"]')[0];
-            
-            if (sharedUrl || sharedTitle || sharedText) {
-                if (urlInput && titleInput) {
-                    try {
-                        if (document.activeElement) {
-                            document.activeElement.blur();
-                        }
-                        
-                        if (sharedUrl) {
-                            urlInput.value = sharedUrl;
-                            urlInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            urlInput.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                        
-                        if (sharedTitle) {
-                            titleInput.value = sharedTitle;
-                            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            titleInput.dispatchEvent(new Event('change', { bubbles: true }));
-                        } else if (sharedText) {
-                            titleInput.value = sharedText;
-                            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
-                            titleInput.dispatchEvent(new Event('change', { bubbles: true }));
-                        }
-                        
-                        if (!sharedUrl && sharedText) {
-                            const urlPattern = /https?:\/\/[^\s]+/g;
-                            const foundUrls = sharedText.match(urlPattern);
-                            if (foundUrls && foundUrls.length > 0) {
-                                urlInput.value = foundUrls[0];
-                                urlInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                urlInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                
-                                const remainingText = sharedText.replace(foundUrls[0], '').trim();
-                                if (remainingText) {
-                                    titleInput.value = remainingText;
-                                    titleInput.dispatchEvent(new Event('input', { bubbles: true }));
-                                    titleInput.dispatchEvent(new Event('change', { bubbles: true }));
-                                }
-                            }
-                        }
-                        
-                        setTimeout(() => {
-                            if (sharedUrl && !urlInput.value) {
-                                urlInput.setAttribute('value', sharedUrl);
-                                urlInput.value = sharedUrl;
-                            }
-                            if ((sharedTitle || sharedText) && !titleInput.value) {
-                                const titleValue = sharedTitle || sharedText;
-                                titleInput.setAttribute('value', titleValue);
-                                titleInput.value = titleValue;
-                            }
-                        }, 500);
-                        
-                        setTimeout(() => {
-                            if (urlInput.value) {
-                                toggleAddForm();
-                                urlInput.focus();
-                                urlInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            }
-                        }, 200);
-                        
-                    } catch (error) {
-                        console.error('Error setting form values:', error);
-                    }
-                    
-                    const newUrl = window.location.pathname;
-                    window.history.replaceState({}, document.title, newUrl);
-                    
-                    showToast('共有されたサイトを受信しました');
-                }
+        function closeAllBookmarkItems() {
+            document.querySelectorAll('.bookmark-item').forEach(item => {
+                item.classList.remove('focused');
+            });
+        }
+
+        // ブックマーク編集（コメントのみ）
+        function editBookmark(id) {
+            const bookmark = bookmarks.find(b => b.id === id);
+            if (!bookmark) {
+                alert('ブックマークが見つかりません');
+                return;
             }
+            
+            const newComment = prompt('コメントを編集:', bookmark.comment || '');
+            
+            // キャンセルされた場合は何もしない
+            if (newComment === null) return;
+            
+            // コメントを更新
+            bookmark.comment = newComment.trim();
+            localStorage.setItem('tlw-bookmarks', JSON.stringify(bookmarks));
+            renderBookmarks();
+            
+            // 編集完了の通知
+            showToast('コメントを更新しました');
         }
 
         function toggleBookmarkFocus(id) {
@@ -1052,8 +1015,43 @@
             // 追加の安全策を削除して、シンプルな動作に戻す
         }
 
-        // 検索機能
-        function filterBookmarks() {            
+        // 固定ヘッダーの表示/非表示制御
+        let lastScrollTop = 0;
+        const headerFixed = document.getElementById('headerFixed');
+        const searchFixed = document.getElementById('searchFixed');
+        const searchMain = document.getElementById('search');
+
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (scrollTop > 100) {
+                headerFixed.classList.add('show');
+                // 検索内容を同期
+                if (searchMain.value !== searchFixed.value) {
+                    searchFixed.value = searchMain.value;
+                }
+            } else {
+                headerFixed.classList.remove('show');
+            }
+            
+            lastScrollTop = scrollTop;
+        });
+
+        // 検索ボックスの同期
+        function syncSearchBoxes() {
+            const mainValue = document.getElementById('search').value;
+            const fixedValue = document.getElementById('searchFixed').value;
+            
+            if (mainValue !== fixedValue) {
+                document.getElementById('searchFixed').value = mainValue;
+                document.getElementById('search').value = fixedValue;
+            }
+        }
+
+        // 検索機能を更新（両方の検索ボックスに対応）
+        function filterBookmarks() {
+            syncSearchBoxes();
+            
             const searchTerm = document.getElementById('search').value.toLowerCase();
             if (!searchTerm) {
                 renderBookmarks();
@@ -1074,7 +1072,7 @@
             const toast = document.createElement('div');
             toast.style.cssText = `
                 position: fixed;
-                top: 20px;
+                top: 90px;
                 left: 50%;
                 transform: translateX(-50%);
                 background: var(--success-color);
@@ -1378,39 +1376,8 @@
             }, { passive: false });
         }
 
-        // 初期化時にpull to refresh無効化を実行
-        disablePullToRefresh();
-
-        // 初期化時に共有データ処理
-        window.addEventListener('DOMContentLoaded', () => {
-            handleSharedData();
-            
-            setTimeout(() => {
-                handleSharedData();
-            }, 100);
-            
-            setTimeout(() => {
-                handleSharedData();
-            }, 500);
-        });
-        
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                handleSharedData();
-            }, 200);
-        });
-        
-        document.addEventListener('readystatechange', () => {
-            if (document.readyState === 'complete') {
-                setTimeout(() => {
-                    if (window.location.search) {
-                        handleSharedData();
-                    }
-                }, 100);
-            }
-        });
-
         // 初期化
+        disablePullToRefresh();
         renderBookmarks();
     </script>
 </body>
