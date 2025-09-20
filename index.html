@@ -100,7 +100,7 @@
 
         .header-subtitle {
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 15px;
             margin-left: 8px;
         }
 
@@ -576,7 +576,7 @@
             }
 
             .header-subtitle {
-                font-size: 12px;
+                font-size: 13px;
             }
 
             .search-input {
@@ -651,7 +651,7 @@
     <div class="header">
         <div class="header-title">
             <div>
-                <h1>TLW<span class="header-subtitle">- パーソナルブックマーク管理</span></h1>
+                <h1>TLW<span class="header-subtitle">パーソナルブックマーク管理アプリ</span></h1>
             </div>
             <button class="help-button" onclick="showHelpDialog()" title="ヘルプ">
                 ❓
@@ -864,7 +864,6 @@
                 // フォームを表示
                 addForm.classList.add('expanded');
                 addButton.innerHTML = '×';
-                addButton.style.transform = 'rotate(45deg)';
                 formVisible = true;
                 
                 // URLフィールドにフォーカス
@@ -883,7 +882,6 @@
             
             addForm.classList.remove('expanded');
             addButton.innerHTML = '+';
-            addButton.style.transform = 'rotate(0deg)';
             formVisible = false;
             
             // フォームをクリア
