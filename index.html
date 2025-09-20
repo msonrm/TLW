@@ -664,7 +664,7 @@
             </button>
         </div>
         <div class="header-controls">
-            <input type="text" class="search-input" id="search" placeholder="ブックマークを検索..." oninput="filterBookmarks()">
+            <input type="text" class="search-input" id="search" placeholder="ブックマークを検索...">
             <button class="add-button" onclick="toggleAddForm()" title="ブックマークを追加">
                 +
             </button>
@@ -674,7 +674,7 @@
     <!-- 固定ヘッダー（スクロール時に表示） -->
     <div class="header-fixed" id="headerFixed">
         <div class="header-controls">
-            <input type="text" class="search-input" id="searchFixed" placeholder="ブックマークを検索..." oninput="filterBookmarks()">
+            <input type="text" class="search-input" id="searchFixed" placeholder="ブックマークを検索...">
             <button class="add-button" onclick="toggleAddForm()" title="ブックマークを追加">
                 +
             </button>
@@ -1074,6 +1074,31 @@
             lastScrollTop = scrollTop;
         });
 
+        // 日本語入力対応の検索機能
+        let searchTimeout;
+        let isComposing = false;
+
+        function handleSearchInput(element) {
+            if (isComposing) return; // IME変換中は検索しない
+            
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                filterBookmarks();
+            }, 300); // 300ms後に検索実行（デバウンス）
+        }
+
+        function handleCompositionStart() {
+            isComposing = true;
+        }
+
+        function handleCompositionEnd() {
+            isComposing = false;
+            // 変換確定後に検索実行
+            setTimeout(() => {
+                filterBookmarks();
+            }, 50);
+        }
+
         // 検索ボックスの同期
         function syncSearchBoxes() {
             const mainValue = document.getElementById('search').value;
@@ -1339,6 +1364,23 @@
             }
         }
 
+        // 検索入力のイベントリスナー設定
+        function setupSearchEvents() {
+            const searchMain = document.getElementById('search');
+            const searchFixed = document.getElementById('searchFixed');
+            
+            // メイン検索ボックス
+            searchMain.addEventListener('input', (e) => handleSearchInput(e.target));
+            searchMain.addEventListener('compositionstart', handleCompositionStart);
+            searchMain.addEventListener('compositionend', handleCompositionEnd);
+            searchMain.addEventListener('focus', closeAllBookmarkItems);
+            
+            // 固定検索ボックス
+            searchFixed.addEventListener('input', (e) => handleSearchInput(e.target));
+            searchFixed.addEventListener('compositionstart', handleCompositionStart);
+            searchFixed.addEventListener('compositionend', handleCompositionEnd);
+        }
+
         // イベントリスナー
         document.getElementById('url').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') addBookmark();
@@ -1352,7 +1394,6 @@
         });
 
         // フォーカス管理
-        document.getElementById('search').addEventListener('focus', closeAllBookmarkItems);
         document.getElementById('url').addEventListener('focus', closeAllBookmarkItems);
         document.getElementById('title').addEventListener('focus', closeAllBookmarkItems);
         document.getElementById('comment').addEventListener('focus', closeAllBookmarkItems);
@@ -1416,6 +1457,7 @@
         // 初期化
         disablePullToRefresh();
         renderBookmarks();
+        setupSearchEvents();
     </script>
 </body>
 </html>
