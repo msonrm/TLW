@@ -34,12 +34,12 @@
             --border-color: #C6C6C8;
             --destructive-color: #FF3B30;
             --success-color: #34C759;
-            --header-height: 140px;
+            --header-height: 120px;
         }
 
         @media (max-width: 480px) {
             :root {
-                --header-height: 160px;
+                --header-height: 140px;
             }
         }
 
@@ -63,37 +63,31 @@
             color: var(--text-primary);
             line-height: 1.5;
             overscroll-behavior-y: none;
+            padding-top: var(--header-height);
         }
 
         .header {
             background-color: var(--surface-color);
             border-bottom: 0.5px solid var(--border-color);
-            padding: 16px 20px 0 20px;
-            position: static;
-            z-index: 100;
-        }
-
-        .header-fixed {
-            background-color: var(--surface-color);
-            border-bottom: 0.5px solid var(--border-color);
-            padding: 12px 20px;
+            padding: 16px 20px 12px 20px;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             z-index: 100;
-            display: none;
+            height: var(--header-height);
+            box-sizing: border-box;
         }
 
-        .header-fixed.show {
-            display: block;
+        .header-fixed {
+            display: none;
         }
 
         .header-title {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
 
         .header-title h1 {
@@ -129,7 +123,7 @@
             display: flex;
             gap: 12px;
             align-items: center;
-            padding: 16px 0;
+            padding: 8px 0;
         }
 
         .search-input {
@@ -621,7 +615,7 @@
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 2px;
-                margin-bottom: 12px;
+                margin-bottom: 8px;
             }
 
             .header-title h1 {
@@ -665,16 +659,6 @@
         </div>
         <div class="header-controls">
             <input type="text" class="search-input" id="search" placeholder="ブックマークを検索...">
-            <button class="add-button" onclick="toggleAddForm()" title="ブックマークを追加">
-                +
-            </button>
-        </div>
-    </div>
-
-    <!-- 固定ヘッダー（スクロール時に表示） -->
-    <div class="header-fixed" id="headerFixed">
-        <div class="header-controls">
-            <input type="text" class="search-input" id="searchFixed" placeholder="ブックマークを検索...">
             <button class="add-button" onclick="toggleAddForm()" title="ブックマークを追加">
                 +
             </button>
@@ -1078,7 +1062,7 @@
         let searchTimeout;
         let isComposing = false;
 
-        function handleSearchInput(element) {
+        function handleSearchInput() {
             if (isComposing) return; // IME変換中は検索しない
             
             clearTimeout(searchTimeout);
@@ -1099,21 +1083,8 @@
             }, 50);
         }
 
-        // 検索ボックスの同期
-        function syncSearchBoxes() {
-            const mainValue = document.getElementById('search').value;
-            const fixedValue = document.getElementById('searchFixed').value;
-            
-            if (mainValue !== fixedValue) {
-                document.getElementById('searchFixed').value = mainValue;
-                document.getElementById('search').value = fixedValue;
-            }
-        }
-
-        // 検索機能を更新（両方の検索ボックスに対応）
+        // 検索機能
         function filterBookmarks() {
-            syncSearchBoxes();
-            
             const searchTerm = document.getElementById('search').value.toLowerCase();
             if (!searchTerm) {
                 renderBookmarks();
